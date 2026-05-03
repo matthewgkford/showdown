@@ -593,5 +593,160 @@
       "double": null,
       "homer": null
     }
+  },
+  {
+    "id": "bonds-sf",
+    "name": "Barry Bonds",
+    "year": 2001,
+    "team": "SF",
+    "teamFullName": "San Francisco Giants",
+    "set": "2001",
+    "points": 650,
+    "cardType": "batter",
+    "onBase": 10,
+    "speed": { "letter": "B", "value": 15 },
+    "bats": "L",
+    "positions": [
+      { "position": "LF", "fielding": 1 },
+      { "position": "RF", "fielding": 1 }
+    ],
+    "chart": {
+      "so": { "min": 1, "max": 1 },
+      "gb": null,
+      "fb": { "min": 2, "max": 3 },
+      "bb": { "min": 4, "max": 10 },
+      "single": { "min": 11, "max": 12 },
+      "singlePlus": { "min": 13, "max": 13 },
+      "double": { "min": 14, "max": 15 },
+      "triple": null,
+      "homer": { "min": 16, "max": 20 }
+    }
+  },
+  {
+    "id": "arod-tex",
+    "name": "Alex Rodriguez",
+    "year": 2001,
+    "team": "TEX",
+    "teamFullName": "Texas Rangers",
+    "set": "2001",
+    "points": 640,
+    "cardType": "batter",
+    "onBase": 10,
+    "speed": { "letter": "B", "value": 15 },
+    "bats": "R",
+    "positions": [{ "position": "SS", "fielding": 4 }],
+    "chart": {
+      "so": { "min": 1, "max": 1 },
+      "gb": { "min": 2, "max": 2 },
+      "fb": null,
+      "bb": { "min": 3, "max": 9 },
+      "single": { "min": 10, "max": 13 },
+      "singlePlus": { "min": 14, "max": 14 },
+      "double": { "min": 15, "max": 16 },
+      "triple": null,
+      "homer": { "min": 17, "max": 20 }
+    }
+  },
+  {
+    "id": "delgado-tor",
+    "name": "Carlos Delgado",
+    "year": 2001,
+    "team": "TOR",
+    "teamFullName": "Toronto Blue Jays",
+    "set": "2001",
+    "points": 610,
+    "cardType": "batter",
+    "onBase": 11,
+    "speed": { "letter": "C", "value": 10 },
+    "bats": "L",
+    "positions": [{ "position": "1B", "fielding": 0 }],
+    "chart": {
+      "so": { "min": 1, "max": 1 },
+      "gb": { "min": 2, "max": 3 },
+      "fb": null,
+      "bb": { "min": 4, "max": 10 },
+      "single": { "min": 11, "max": 14 },
+      "singlePlus": null,
+      "double": { "min": 15, "max": 17 },
+      "triple": null,
+      "homer": { "min": 18, "max": 20 }
+    }
+  },
+  {
+    "id": "maddux-atl",
+    "name": "Greg Maddux",
+    "year": 2001,
+    "team": "ATL",
+    "teamFullName": "Atlanta Braves",
+    "set": "2001",
+    "points": 590,
+    "cardType": "pitcher",
+    "control": 6,
+    "throws": "R",
+    "pitcherType": "starter",
+    "ip": 7,
+    "chart": {
+      "pu": { "min": 1, "max": 2 },
+      "so": { "min": 3, "max": 6 },
+      "gb": { "min": 7, "max": 13 },
+      "fb": { "min": 14, "max": 15 },
+      "bb": { "min": 16, "max": 16 },
+      "single": { "min": 17, "max": 19 },
+      "double": { "min": 20, "max": 20 },
+      "homer": null
+    }
+  },
+  {
+    "id": "larkin-cin",
+    "name": "Barry Larkin",
+    "year": 2001,
+    "team": "CIN",
+    "teamFullName": "Cincinnati Reds",
+    "set": "2001",
+    "points": 320,
+    "cardType": "batter",
+    "onBase": 9,
+    "speed": { "letter": "A", "value": 20 },
+    "bats": "R",
+    "positions": [{ "position": "SS", "fielding": 1 }],
+    "chart": {
+      "so": null,
+      "gb": { "min": 1, "max": 2 },
+      "fb": { "min": 3, "max": 3 },
+      "bb": { "min": 4, "max": 8 },
+      "single": { "min": 9, "max": 15 },
+      "singlePlus": { "min": 16, "max": 16 },
+      "double": { "min": 17, "max": 18 },
+      "triple": { "min": 19, "max": 19 },
+      "homer": { "min": 20, "max": 20 }
+    }
+  },
+  {
+    "id": "hundley-chc",
+    "name": "Todd Hundley",
+    "year": 2001,
+    "team": "CHC",
+    "teamFullName": "Chicago Cubs",
+    "set": "2001",
+    "points": 330,
+    "cardType": "batter",
+    "onBase": 8,
+    "speed": { "letter": "C", "value": 10 },
+    "bats": "S",
+    "positions": [
+      { "position": "1B", "fielding": 0 },
+      { "position": "CA", "fielding": 2 }
+    ],
+    "chart": {
+      "so": { "min": 1, "max": 4 },
+      "gb": null,
+      "fb": { "min": 5, "max": 5 },
+      "bb": { "min": 6, "max": 10 },
+      "single": { "min": 11, "max": 14 },
+      "singlePlus": null,
+      "double": { "min": 15, "max": 15 },
+      "triple": null,
+      "homer": { "min": 16, "max": 20 }
+    }
   }
 ]

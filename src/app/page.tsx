@@ -1,10 +1,24 @@
+import fs from "node:fs";
+import path from "node:path";
 import cardsData from "@data/cards.json";
 import { Card } from "@/components/Card";
 import type { Card as CardType, BatterCard, PitcherCard } from "@/types/card";
 
 const cards = cardsData as CardType[];
 
+function loadAvailableImages(): Set<string> {
+  const dir = path.join(process.cwd(), "public", "cards");
+  if (!fs.existsSync(dir)) return new Set();
+  return new Set(
+    fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith(".png"))
+      .map((f) => f.replace(/\.png$/, "")),
+  );
+}
+
 export default function Home() {
+  const haveImages = loadAvailableImages();
   const batters = cards.filter((c): c is BatterCard => c.cardType === "batter");
   const pitchers = cards.filter((c): c is PitcherCard => c.cardType === "pitcher");
 
@@ -19,17 +33,17 @@ export default function Home() {
         </header>
 
         <Section title="Batters" count={batters.length}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {batters.map((c) => (
-              <Card key={c.id} card={c} />
+              <Card key={c.id} card={c} hasImage={haveImages.has(c.id)} />
             ))}
           </div>
         </Section>
 
         <Section title="Pitchers" count={pitchers.length}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {pitchers.map((c) => (
-              <Card key={c.id} card={c} />
+              <Card key={c.id} card={c} hasImage={haveImages.has(c.id)} />
             ))}
           </div>
         </Section>
