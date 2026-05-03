@@ -12,7 +12,7 @@ export function Card({ card, hasImage }: { card: CardType; hasImage: boolean }) 
         alt={card.name}
         width={CARD_WIDTH}
         height={CARD_HEIGHT}
-        className="w-full h-auto rounded-xl shadow-md shadow-black/40"
+        className="w-full h-auto rounded-md shadow-md shadow-black/40"
         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
       />
     );
@@ -23,7 +23,7 @@ export function Card({ card, hasImage }: { card: CardType; hasImage: boolean }) 
 function Placeholder({ card }: { card: CardType }) {
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/40 p-6 text-center"
+      className="flex flex-col items-center justify-center rounded-md border border-dashed border-zinc-700 bg-zinc-900/40 p-6 text-center"
       style={{ aspectRatio: `${CARD_WIDTH} / ${CARD_HEIGHT}` }}
     >
       <div className="text-sm font-semibold text-zinc-200">{card.name}</div>
