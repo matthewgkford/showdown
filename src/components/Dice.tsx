@@ -1,12 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 type Status = "idle" | "rolling" | "settled";
+type Tone = "neutral" | "pitcher" | "batter";
 
 const TUMBLE_MS = 900;
 const TUMBLE_TICK_MS = 70;
+
+const TONE_STOPS: Record<Tone, [string, string]> = {
+  neutral: ["#52525b", "#27272a"], // zinc 600 → 800
+  pitcher: ["#fb7185", "#9f1239"], // rose 400 → 800
+  batter: ["#38bdf8", "#075985"], // sky 400 → 800
+};
 
 export function Dice({
   status,
@@ -19,7 +26,7 @@ export function Dice({
   value: number | null;
   label: string;
   onTap?: () => void;
-  tone?: "neutral" | "pitcher" | "batter";
+  tone?: Tone;
 }) {
   const [tumbleFace, setTumbleFace] = useState<number>(1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -37,19 +44,12 @@ export function Dice({
   }, [status]);
 
   const tappable = status === "idle" && !!onTap;
-  const display =
-    status === "settled"
+  const display: number | string =
+    status === "settled" && value !== null
       ? value
       : status === "rolling"
         ? tumbleFace
         : "?";
-
-  const toneClass =
-    tone === "pitcher"
-      ? "from-rose-500 to-rose-700 ring-rose-300/30"
-      : tone === "batter"
-        ? "from-sky-500 to-sky-700 ring-sky-300/30"
-        : "from-zinc-600 to-zinc-800 ring-zinc-400/20";
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -69,21 +69,87 @@ export function Dice({
             ? { duration: TUMBLE_MS / 1000, ease: "easeOut" }
             : { duration: 0.25, ease: "easeOut" }
         }
-        className={`relative h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br ${toneClass} ring-2 shadow-lg shadow-black/40 flex items-center justify-center font-mono text-2xl sm:text-3xl font-bold text-white select-none ${
+        className={`relative h-16 w-16 sm:h-20 sm:w-20 select-none ${
           tappable
             ? "cursor-pointer hover:brightness-110 active:brightness-95"
             : "cursor-default"
-        } ${status === "idle" ? "opacity-70" : "opacity-100"}`}
+        } ${status === "idle" ? "opacity-80" : "opacity-100"}`}
       >
-        <span>{display}</span>
+        <D20 value={display} tone={tone} />
         {tappable && (
-          <span className="absolute inset-0 rounded-2xl ring-4 ring-emerald-400/50 animate-pulse pointer-events-none" />
+          <span className="absolute inset-0 rounded-full ring-4 ring-emerald-400/50 animate-pulse pointer-events-none" />
         )}
       </motion.button>
       <span className="text-[10px] uppercase tracking-wider text-zinc-500">
         {label}
       </span>
     </div>
+  );
+}
+
+function D20({
+  value,
+  tone,
+}: {
+  value: number | string;
+  tone: Tone;
+}) {
+  const gradId = useId();
+  const [stopA, stopB] = TONE_STOPS[tone];
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      className="h-full w-full drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stopA} />
+          <stop offset="100%" stopColor={stopB} />
+        </linearGradient>
+      </defs>
+
+      {/* outer hexagonal silhouette of the d20 */}
+      <polygon
+        points="50,4 92,28 92,72 50,96 8,72 8,28"
+        fill={`url(#${gradId})`}
+        stroke="rgba(0,0,0,0.45)"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+
+      {/* surrounding facets — light/dark to suggest 3D faceting */}
+      <polygon points="50,4 92,28 50,28" fill="rgba(255,255,255,0.18)" />
+      <polygon points="50,4 8,28 50,28" fill="rgba(255,255,255,0.06)" />
+      <polygon points="92,28 92,72 70,72 50,28" fill="rgba(0,0,0,0.10)" />
+      <polygon points="8,28 50,28 30,72 8,72" fill="rgba(0,0,0,0.04)" />
+      <polygon points="92,72 70,72 50,96" fill="rgba(0,0,0,0.22)" />
+      <polygon points="8,72 30,72 50,96" fill="rgba(0,0,0,0.30)" />
+
+      {/* central up-pointing triangle = the visible face holding the number */}
+      <polygon
+        points="50,28 70,72 30,72"
+        fill="rgba(255,255,255,0.20)"
+        stroke="rgba(255,255,255,0.55)"
+        strokeWidth="0.8"
+        strokeLinejoin="round"
+      />
+
+      {/* the rolled value, sitting in the wide part of the front face */}
+      <text
+        x="50"
+        y="62"
+        textAnchor="middle"
+        fontSize={typeof value === "number" && value >= 10 ? "26" : "30"}
+        fontWeight="800"
+        fill="white"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        style={{ paintOrder: "stroke fill" }}
+        stroke="rgba(0,0,0,0.35)"
+        strokeWidth="1"
+      >
+        {value}
+      </text>
+    </svg>
   );
 }
 
