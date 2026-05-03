@@ -141,6 +141,7 @@ export default function AtBatPage() {
           value={pitcherId}
           onChange={changePitcher}
           disabled={isLocked}
+          active={stage.kind === "idle" || stage.kind === "pitcher-rolling"}
           options={pitchers.map((p) => ({
             id: p.id,
             label: `${p.name} · Ctrl ${p.control}`,
@@ -152,6 +153,7 @@ export default function AtBatPage() {
           value={batterId}
           onChange={changeBatter}
           disabled={isLocked}
+          active={stage.kind === "pitcher-settled" || stage.kind === "batter-rolling"}
           options={batters.map((b) => ({
             id: b.id,
             label: `${b.name} · OB ${b.onBase}`,
@@ -295,6 +297,7 @@ function CardPicker({
   value,
   onChange,
   disabled,
+  active,
   options,
   card,
 }: {
@@ -302,12 +305,17 @@ function CardPicker({
   value: string;
   onChange: (id: string) => void;
   disabled?: boolean;
+  active?: boolean;
   options: { id: string; label: string }[];
   card: CardType;
 }) {
   return (
     <div className="flex flex-col min-h-0">
-      <label className="shrink-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+      <label
+        className={`shrink-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 ${
+          active ? "text-emerald-300" : "text-zinc-500"
+        }`}
+      >
         {label}
       </label>
       <select
@@ -328,7 +336,9 @@ function CardPicker({
           alt={card.name}
           width={1488}
           height={2079}
-          className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40"
+          className={`block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 transition-shadow ${
+            active ? "ring-4 ring-emerald-400/60" : ""
+          }`}
           sizes="50vw"
           priority
         />

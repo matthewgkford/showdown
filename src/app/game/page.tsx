@@ -325,11 +325,17 @@ function Play({
       ) : (
         <>
           <div className="flex-1 min-h-0 grid grid-cols-2 gap-3 sm:gap-6">
-            <CardSlot label={`P · ${pitcher.name}`} card={pitcher} disabled={isLocked} />
+            <CardSlot
+              label={`P · ${pitcher.name}`}
+              card={pitcher}
+              disabled={isLocked}
+              active={stage.kind === "idle" || stage.kind === "pitcher-rolling"}
+            />
             <CardSlot
               label={`#${currentBatterSlot(game) + 1} · ${batter.name}`}
               card={batter}
               disabled={isLocked}
+              active={stage.kind === "pitcher-settled" || stage.kind === "batter-rolling"}
             />
           </div>
           <div className="shrink-0 mt-3 flex items-center justify-around gap-3">
@@ -368,16 +374,18 @@ function CardSlot({
   label,
   card,
   disabled,
+  active,
 }: {
   label: string;
   card: CardType;
   disabled?: boolean;
+  active?: boolean;
 }) {
   return (
     <div className="flex flex-col min-h-0">
       <div
         className={`shrink-0 truncate text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 ${
-          disabled ? "text-zinc-600" : "text-zinc-500"
+          disabled ? "text-zinc-600" : active ? "text-emerald-300" : "text-zinc-500"
         }`}
       >
         {label}
@@ -388,7 +396,9 @@ function CardSlot({
           alt={card.name}
           width={1488}
           height={2079}
-          className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40"
+          className={`block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 transition-shadow ${
+            active ? "ring-4 ring-emerald-400/60" : ""
+          }`}
           sizes="50vw"
           priority
         />
