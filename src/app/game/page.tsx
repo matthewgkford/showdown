@@ -468,12 +468,26 @@ const STEP_MS = 380;
 // base at a time from the pre-play state to the post-play state. Each
 // element of the returned array is a frame the field view will render in
 // turn; layoutId animates the cards between consecutive frames.
+//
+// Special case: when an out ends the half-inning, runners on base don't
+// actually advance — they head to the dugout. Show them at their current
+// bases for one frame, then fade them off (empty frame), instead of
+// running them around the basepath as if they scored.
 function computeSteps(
   prev: Bases,
   current: Bases,
   justBatted: BatterCard,
   outcome: Outcome,
+  halfEnded: boolean,
 ): RunnerSnapshot[][] {
+  if (halfEnded) {
+    const stuck: RunnerSnapshot[] = [];
+    if (prev.first) stuck.push({ card: prev.first, pos: "first" });
+    if (prev.second) stuck.push({ card: prev.second, pos: "second" });
+    if (prev.third) stuck.push({ card: prev.third, pos: "third" });
+    return stuck.length > 0 ? [stuck, []] : [stuck];
+  }
+
   const initial: RunnerSnapshot[] = [];
   if (prev.first) initial.push({ card: prev.first, pos: "first" });
   if (prev.second) initial.push({ card: prev.second, pos: "second" });
@@ -521,9 +535,12 @@ function FieldView({
   justBatted: BatterCard;
   onNext: () => void;
 }) {
+  // The half flips back to outs=0 only when the 3rd out lands.
+  const halfEnded = isOut(outcome) && game.outs === 0;
+
   const frames = useMemo(
-    () => computeSteps(preBases, game.bases, justBatted, outcome),
-    [preBases, game.bases, justBatted, outcome],
+    () => computeSteps(preBases, game.bases, justBatted, outcome, halfEnded),
+    [preBases, game.bases, justBatted, outcome, halfEnded],
   );
 
   const [frameIdx, setFrameIdx] = useState(0);
@@ -553,6 +570,11 @@ function FieldView({
           {outcomeLabel(outcome).toUpperCase()}
         </div>
         <div className="text-xs sm:text-sm text-zinc-400">{justBatted.name}</div>
+        {halfEnded && (
+          <div className="mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wider text-rose-400">
+            Side retired
+          </div>
+        )}
       </motion.div>
 
       <Field runners={visible} />
