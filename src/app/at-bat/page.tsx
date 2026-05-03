@@ -328,7 +328,7 @@ function CardPicker({
           alt={card.name}
           width={1488}
           height={2079}
-          className="block max-h-full max-w-full w-auto h-auto rounded-md shadow-md shadow-black/40"
+          className="block max-h-full max-w-full w-auto h-auto rounded-lg shadow-md shadow-black/40"
           sizes="50vw"
           priority
         />
