@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import cardsData from "@data/cards.json";
@@ -16,6 +16,7 @@ import {
   rollD20,
 } from "@/lib/game";
 import {
+  type Bases,
   type GameState,
   applyAtBatOutcome,
   currentBatter,
@@ -224,6 +225,7 @@ type Stage =
       kind: "field";
       outcome: Outcome;
       justBatted: BatterCard;
+      preBases: Bases;
     };
 
 function Play({
@@ -256,15 +258,13 @@ function Play({
     setStage({ kind: "batter-rolling", pitchRoll, advantage, swingRoll });
     setTimeout(() => {
       const outcome = getOutcome(pitcher, batter, advantage, swingRoll);
-      // Capture the batter who just hit before state advances.
+      // Capture the batter who just hit and the bases as they were
+      // before the play resolves. The field view uses preBases to
+      // animate runners step-by-step around the diamond.
       const justBatted = batter;
-      setStage({ kind: "field", outcome, justBatted });
-      // Brief delay so the field renders with the pre-apply bases first;
-      // when state then updates, runner cards animate to their new bases
-      // via shared layoutId.
-      setTimeout(() => {
-        setGame((g) => applyAtBatOutcome(g, outcome));
-      }, 120);
+      const preBases = game.bases;
+      setStage({ kind: "field", outcome, justBatted, preBases });
+      setGame((g) => applyAtBatOutcome(g, outcome));
     }, DICE_TUMBLE_MS);
   }
 
@@ -319,6 +319,7 @@ function Play({
       {stage.kind === "field" ? (
         <FieldView
           game={game}
+          preBases={stage.preBases}
           outcome={stage.outcome}
           justBatted={stage.justBatted}
           onNext={nextBatter}
@@ -486,20 +487,89 @@ function Center({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Field view: between at-bats. Big diamond with each runner's card on
-// their base. Cards animate via shared layoutId when state updates.
+// their base, animated step-by-step around the basepath.
 // ─────────────────────────────────────────────────────────────────────────────
+
+type BasePos = "home" | "first" | "second" | "third" | "scored";
+const BASE_ORDER: BasePos[] = ["home", "first", "second", "third", "scored"];
+
+type RunnerSnapshot = { card: BatterCard; pos: BasePos };
+
+const STEP_MS = 380;
+
+// Build a sequence of intermediate snapshots that walk every runner one
+// base at a time from the pre-play state to the post-play state. Each
+// element of the returned array is a frame the field view will render in
+// turn; layoutId animates the cards between consecutive frames.
+function computeSteps(
+  prev: Bases,
+  current: Bases,
+  justBatted: BatterCard,
+  outcome: Outcome,
+): RunnerSnapshot[][] {
+  const initial: RunnerSnapshot[] = [];
+  if (prev.first) initial.push({ card: prev.first, pos: "first" });
+  if (prev.second) initial.push({ card: prev.second, pos: "second" });
+  if (prev.third) initial.push({ card: prev.third, pos: "third" });
+  if (!isOut(outcome)) initial.push({ card: justBatted, pos: "home" });
+
+  const dest: Record<string, BasePos> = {};
+  for (const r of initial) {
+    if (current.first?.id === r.card.id) dest[r.card.id] = "first";
+    else if (current.second?.id === r.card.id) dest[r.card.id] = "second";
+    else if (current.third?.id === r.card.id) dest[r.card.id] = "third";
+    else dest[r.card.id] = "scored";
+  }
+
+  const frames: RunnerSnapshot[][] = [initial];
+  let cur = initial;
+  for (let safety = 0; safety < 6; safety++) {
+    let moved = false;
+    const next: RunnerSnapshot[] = cur.map((r) => {
+      const dIdx = BASE_ORDER.indexOf(dest[r.card.id]);
+      const cIdx = BASE_ORDER.indexOf(r.pos);
+      if (cIdx < dIdx) {
+        moved = true;
+        return { card: r.card, pos: BASE_ORDER[cIdx + 1] };
+      }
+      return r;
+    });
+    if (!moved) break;
+    frames.push(next);
+    cur = next;
+  }
+  return frames;
+}
 
 function FieldView({
   game,
+  preBases,
   outcome,
   justBatted,
   onNext,
 }: {
   game: GameState;
+  preBases: Bases;
   outcome: Outcome;
   justBatted: BatterCard;
   onNext: () => void;
 }) {
+  const frames = useMemo(
+    () => computeSteps(preBases, game.bases, justBatted, outcome),
+    [preBases, game.bases, justBatted, outcome],
+  );
+
+  const [frameIdx, setFrameIdx] = useState(0);
+
+  useEffect(() => {
+    if (frameIdx >= frames.length - 1) return;
+    const t = setTimeout(() => setFrameIdx((i) => i + 1), STEP_MS);
+    return () => clearTimeout(t);
+  }, [frameIdx, frames.length]);
+
+  const isAnimating = frameIdx < frames.length - 1;
+  const visible = frames[frameIdx].filter((r) => r.pos !== "scored");
+
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-2">
       <motion.div
@@ -515,24 +585,26 @@ function FieldView({
         >
           {outcomeLabel(outcome).toUpperCase()}
         </div>
-        <div className="text-xs sm:text-sm text-zinc-400">
-          {justBatted.name}
-        </div>
+        <div className="text-xs sm:text-sm text-zinc-400">{justBatted.name}</div>
       </motion.div>
 
-      <Field bases={game.bases} />
+      <Field runners={visible} />
 
-      <button
-        onClick={onNext}
-        className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
-      >
-        Next batter →
-      </button>
+      {isAnimating ? (
+        <div className="h-10" aria-hidden />
+      ) : (
+        <button
+          onClick={onNext}
+          className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
+        >
+          Next batter →
+        </button>
+      )}
     </div>
   );
 }
 
-function Field({ bases }: { bases: { first: BatterCard | null; second: BatterCard | null; third: BatterCard | null } }) {
+function Field({ runners }: { runners: RunnerSnapshot[] }) {
   return (
     <div className="relative aspect-square w-full max-w-[min(70vh,420px)]">
       <svg
@@ -540,7 +612,6 @@ function Field({ bases }: { bases: { first: BatterCard | null; second: BatterCar
         className="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
       >
-        {/* infield */}
         <polygon
           points="50,12 88,50 50,88 12,50"
           fill="rgba(34,197,94,0.05)"
@@ -548,11 +619,9 @@ function Field({ bases }: { bases: { first: BatterCard | null; second: BatterCar
           strokeWidth="0.4"
           strokeDasharray="2 2"
         />
-        {/* bases */}
-        <BaseSquare cx={88} cy={50} occupied={!!bases.first} />
-        <BaseSquare cx={50} cy={12} occupied={!!bases.second} />
-        <BaseSquare cx={12} cy={50} occupied={!!bases.third} />
-        {/* home plate */}
+        <BaseSquare cx={88} cy={50} occupied={runners.some((r) => r.pos === "first")} />
+        <BaseSquare cx={50} cy={12} occupied={runners.some((r) => r.pos === "second")} />
+        <BaseSquare cx={12} cy={50} occupied={runners.some((r) => r.pos === "third")} />
         <rect
           x={45}
           y={84}
@@ -563,14 +632,24 @@ function Field({ bases }: { bases: { first: BatterCard | null; second: BatterCar
         />
       </svg>
 
-      {bases.first && <RunnerCard card={bases.first} cornerClass="right-0 top-1/2 -translate-y-1/2" />}
-      {bases.second && <RunnerCard card={bases.second} cornerClass="left-1/2 -translate-x-1/2 top-0" />}
-      {bases.third && <RunnerCard card={bases.third} cornerClass="left-0 top-1/2 -translate-y-1/2" />}
+      <AnimatePresence>
+        {runners.map((r) => (
+          <RunnerCard key={r.card.id} card={r.card} pos={r.pos} />
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
 
-function BaseSquare({ cx, cy, occupied }: { cx: number; cy: number; occupied: boolean }) {
+function BaseSquare({
+  cx,
+  cy,
+  occupied,
+}: {
+  cx: number;
+  cy: number;
+  occupied: boolean;
+}) {
   return (
     <rect
       x={cx - 3}
@@ -585,18 +664,27 @@ function BaseSquare({ cx, cy, occupied }: { cx: number; cy: number; occupied: bo
   );
 }
 
-function RunnerCard({
-  card,
-  cornerClass,
-}: {
-  card: BatterCard;
-  cornerClass: string;
-}) {
+const POSITION_CLASS: Record<Exclude<BasePos, "scored">, string> = {
+  home: "left-1/2 -translate-x-1/2 bottom-0",
+  first: "right-0 top-1/2 -translate-y-1/2",
+  second: "left-1/2 -translate-x-1/2 top-0",
+  third: "left-0 top-1/2 -translate-y-1/2",
+};
+
+function RunnerCard({ card, pos }: { card: BatterCard; pos: BasePos }) {
+  if (pos === "scored") return null;
   return (
     <motion.div
       layoutId={`runner-${card.id}`}
-      transition={{ type: "spring", stiffness: 280, damping: 26 }}
-      className={`absolute ${cornerClass} flex flex-col items-center w-[22%]`}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.7 }}
+      transition={{
+        layout: { duration: STEP_MS / 1000, ease: "easeInOut" },
+        opacity: { duration: 0.2 },
+        scale: { duration: 0.2 },
+      }}
+      className={`absolute ${POSITION_CLASS[pos]} flex flex-col items-center w-[22%]`}
     >
       <Image
         src={`/cards/${card.id}.png`}
