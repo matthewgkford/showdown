@@ -1,0 +1,311 @@
+import { describe, expect, it } from "vitest";
+import type { BatterCard, PitcherCard } from "@/types/card";
+import {
+  EMPTY_BASES,
+  applyAtBatOutcome,
+  currentBatter,
+  currentPitcher,
+  startGame,
+  type GameState,
+} from "./gameState";
+
+// Synthetic cards — we don't care about the chart values here, only that
+// each batter is identifiable by id when they end up on a base.
+function batter(id: string, onBase = 9): BatterCard {
+  return {
+    id,
+    name: id.toUpperCase(),
+    year: 2001,
+    team: "TST",
+    teamFullName: "Test",
+    set: "2001",
+    points: 100,
+    cardType: "batter",
+    onBase,
+    speed: { letter: "C", value: 10 },
+    bats: "R",
+    positions: [{ position: "DH", fielding: 0 }],
+    chart: {
+      so: { min: 1, max: 1 },
+      gb: { min: 2, max: 2 },
+      fb: { min: 3, max: 3 },
+      bb: { min: 4, max: 4 },
+      single: { min: 5, max: 5 },
+      singlePlus: null,
+      double: null,
+      triple: null,
+      homer: null,
+    },
+  };
+}
+
+const fakePitcher: PitcherCard = {
+  id: "test-pitcher",
+  name: "TestPitcher",
+  year: 2001,
+  team: "TST",
+  teamFullName: "Test",
+  set: "2001",
+  points: 100,
+  cardType: "pitcher",
+  control: 3,
+  throws: "R",
+  pitcherType: "starter",
+  ip: 6,
+  chart: {
+    pu: { min: 1, max: 1 },
+    so: { min: 2, max: 2 },
+    gb: { min: 3, max: 3 },
+    fb: { min: 4, max: 4 },
+    bb: { min: 5, max: 5 },
+    single: { min: 6, max: 6 },
+    double: null,
+    homer: null,
+  },
+};
+
+const awayLineup = Array.from({ length: 9 }, (_, i) => batter(`a${i}`));
+const homeLineup = Array.from({ length: 9 }, (_, i) => batter(`h${i}`));
+
+function freshGame(): GameState {
+  return startGame(
+    { lineup: awayLineup, pitcher: fakePitcher },
+    { lineup: homeLineup, pitcher: fakePitcher },
+  );
+}
+
+describe("startGame", () => {
+  it("opens at top of 1st, no outs, empty bases, both teams 0 runs", () => {
+    const g = freshGame();
+    expect(g.inning).toBe(1);
+    expect(g.half).toBe("top");
+    expect(g.outs).toBe(0);
+    expect(g.bases).toEqual(EMPTY_BASES);
+    expect(g.away.runs).toBe(0);
+    expect(g.home.runs).toBe(0);
+    expect(g.away.battingIndex).toBe(0);
+    expect(g.home.battingIndex).toBe(0);
+  });
+
+  it("currentBatter returns the away leadoff at top of 1st", () => {
+    const g = freshGame();
+    expect(currentBatter(g).id).toBe("a0");
+  });
+
+  it("currentPitcher returns the home pitcher at top of 1st", () => {
+    const g = freshGame();
+    expect(currentPitcher(g)).toBe(fakePitcher);
+  });
+});
+
+describe("single", () => {
+  it("from empty bases puts batter on 1st, no runs", () => {
+    const g = applyAtBatOutcome(freshGame(), "single");
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third).toBeNull();
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("with runner on 3rd scores 1, batter to 1st", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: null, second: null, third: batter("x") },
+    };
+    const g = applyAtBatOutcome(g0, "single");
+    expect(g.away.runs).toBe(1);
+    expect(g.bases.third).toBeNull();
+    expect(g.bases.first?.id).toBe("a0");
+  });
+
+  it("with bases loaded scores 1, runners advance 1", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "single");
+    expect(g.away.runs).toBe(1);
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second?.id).toBe("r1");
+    expect(g.bases.third?.id).toBe("r2");
+  });
+});
+
+describe("singlePlus (1B+)", () => {
+  it("from empty bases puts batter on 1st", () => {
+    const g = applyAtBatOutcome(freshGame(), "singlePlus");
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third).toBeNull();
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("with runner on 1st: batter to 1st, runner to 3rd, no runs", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: null, third: null },
+    };
+    const g = applyAtBatOutcome(g0, "singlePlus");
+    expect(g.away.runs).toBe(0);
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.third?.id).toBe("r1");
+    expect(g.bases.second).toBeNull();
+  });
+
+  it("with bases loaded: 2 runs, batter on 1st, runner-from-1st on 3rd", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "singlePlus");
+    expect(g.away.runs).toBe(2);
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third?.id).toBe("r1");
+  });
+});
+
+describe("double", () => {
+  it("with bases loaded: 2 runs, batter on 2nd, runner-from-1st on 3rd, 1st empty", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "double");
+    expect(g.away.runs).toBe(2);
+    expect(g.bases.first).toBeNull();
+    expect(g.bases.second?.id).toBe("a0");
+    expect(g.bases.third?.id).toBe("r1");
+  });
+});
+
+describe("triple", () => {
+  it("with bases loaded: 3 runs, batter on 3rd", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "triple");
+    expect(g.away.runs).toBe(3);
+    expect(g.bases.first).toBeNull();
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third?.id).toBe("a0");
+  });
+});
+
+describe("homer", () => {
+  it("from empty bases scores 1", () => {
+    const g = applyAtBatOutcome(freshGame(), "homer");
+    expect(g.away.runs).toBe(1);
+    expect(g.bases).toEqual(EMPTY_BASES);
+  });
+
+  it("with bases loaded: grand slam = 4 runs, bases empty", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "homer");
+    expect(g.away.runs).toBe(4);
+    expect(g.bases).toEqual(EMPTY_BASES);
+  });
+});
+
+describe("walk forcing", () => {
+  it("empty bases: batter to 1st, no runs", () => {
+    const g = applyAtBatOutcome(freshGame(), "bb");
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third).toBeNull();
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("runner on 1st only: forces runner to 2nd, batter to 1st", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: null, third: null },
+    };
+    const g = applyAtBatOutcome(g0, "bb");
+    expect(g.away.runs).toBe(0);
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second?.id).toBe("r1");
+    expect(g.bases.third).toBeNull();
+  });
+
+  it("runners on 2nd and 3rd: no force, batter to 1st, others stay", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: null, second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "bb");
+    expect(g.away.runs).toBe(0);
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second?.id).toBe("r2");
+    expect(g.bases.third?.id).toBe("r3");
+  });
+
+  it("bases loaded: 1 run forced in, bases stay loaded", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "bb");
+    expect(g.away.runs).toBe(1);
+    expect(g.bases.first?.id).toBe("a0");
+    expect(g.bases.second?.id).toBe("r1");
+    expect(g.bases.third?.id).toBe("r2");
+  });
+});
+
+describe("outs", () => {
+  it.each(["so", "gb", "fb", "pu"] as const)("%s increments outs and doesn't advance", (out) => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: null, third: null },
+    };
+    const g = applyAtBatOutcome(g0, out);
+    expect(g.outs).toBe(1);
+    expect(g.bases.first?.id).toBe("r1");
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("3rd out flips top → bottom, resets outs and bases, increments away batting index", () => {
+    const g0: GameState = { ...freshGame(), outs: 2 };
+    const g = applyAtBatOutcome(g0, "so");
+    expect(g.half).toBe("bottom");
+    expect(g.inning).toBe(1);
+    expect(g.outs).toBe(0);
+    expect(g.bases).toEqual(EMPTY_BASES);
+    expect(g.away.battingIndex).toBe(1);
+    expect(g.home.battingIndex).toBe(0);
+  });
+
+  it("3rd out in bottom flips to top of next inning", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      half: "bottom",
+      outs: 2,
+      inning: 3,
+    };
+    const g = applyAtBatOutcome(g0, "fb");
+    expect(g.half).toBe("top");
+    expect(g.inning).toBe(4);
+    expect(g.outs).toBe(0);
+    expect(g.home.battingIndex).toBe(1);
+    expect(g.away.battingIndex).toBe(0);
+  });
+});
+
+describe("batting index", () => {
+  it("wraps from 8 back to 0 after the 9th batter", () => {
+    let g: GameState = { ...freshGame(), away: { ...freshGame().away, battingIndex: 8 } };
+    g = applyAtBatOutcome(g, "single");
+    expect(g.away.battingIndex).toBe(0);
+  });
+
+  it("only the batting team's index advances per at-bat", () => {
+    const g = applyAtBatOutcome(freshGame(), "single");
+    expect(g.away.battingIndex).toBe(1);
+    expect(g.home.battingIndex).toBe(0);
+  });
+});
