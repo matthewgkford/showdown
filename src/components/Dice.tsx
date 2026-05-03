@@ -109,11 +109,14 @@ function D20({
       </defs>
 
       {/*
-        Regular pointy-top hexagon, vertices T, TR, BR, B, BL, TL.
-        Inscribing an equilateral triangle by connecting T-BL-BR
-        leaves 3 isosceles "ear" triangles around it (T-TR-BR,
-        BL-B-BR, TL-T-BL). All four shapes are real triangles —
-        no quadrilaterals — and the front face is equilateral.
+        Pointy-top regular hex (T, TR, BR, B, BL, TL) with three
+        inner vertices forming the front face:
+          A (apex, upper-middle), L (base-left), R (base-right)
+        The interior splits into the main face (A-L-R) plus 9
+        surrounding triangles — 10 visible facets, mirroring what
+        you'd see looking at a real icosahedron face-on.
+        Coordinates chosen so A-L-R is approximately equilateral
+        (side ~50) and the front face is large enough for "20".
       */}
       {/* hexagonal silhouette filled with the gradient */}
       <polygon
@@ -124,31 +127,59 @@ function D20({
         strokeLinejoin="round"
       />
 
-      {/* three surrounding "ear" triangles, dark to suggest receding faces */}
-      <polygon points="50,5 89,27.5 89,72.5" fill="rgba(0,0,0,0.18)" />
-      <polygon points="11,72.5 50,95 89,72.5" fill="rgba(0,0,0,0.30)" />
-      <polygon points="11,27.5 50,5 11,72.5" fill="rgba(0,0,0,0.06)" />
+      {/* nine surrounding facets, shaded as if lit from the top-left */}
+      {/* upper ring */}
+      <polygon points="50,5 11,27.5 50,22" fill="rgba(0,0,0,0.06)" />
+      <polygon points="50,5 89,27.5 50,22" fill="rgba(0,0,0,0.20)" />
+      {/* upper flanks */}
+      <polygon points="11,27.5 50,22 25,65" fill="rgba(0,0,0,0.02)" />
+      <polygon points="89,27.5 50,22 75,65" fill="rgba(0,0,0,0.26)" />
+      {/* mid flanks */}
+      <polygon points="11,27.5 25,65 11,72.5" fill="rgba(0,0,0,0.10)" />
+      <polygon points="89,27.5 75,65 89,72.5" fill="rgba(0,0,0,0.32)" />
+      {/* lower ring */}
+      <polygon points="11,72.5 25,65 50,95" fill="rgba(0,0,0,0.28)" />
+      <polygon points="89,72.5 75,65 50,95" fill="rgba(0,0,0,0.38)" />
+      <polygon points="25,65 75,65 50,95" fill="rgba(0,0,0,0.20)" />
 
       {/* equilateral front face holding the rolled value */}
       <polygon
-        points="50,5 11,72.5 89,72.5"
-        fill="rgba(255,255,255,0.10)"
-        stroke="rgba(255,255,255,0.5)"
+        points="50,22 25,65 75,65"
+        fill="rgba(255,255,255,0.18)"
+        stroke="rgba(255,255,255,0.55)"
         strokeWidth="0.8"
         strokeLinejoin="round"
       />
 
-      {/* the rolled value */}
+      {/* facet edges across the rest of the die — thin highlights */}
+      <g
+        stroke="rgba(255,255,255,0.18)"
+        strokeWidth="0.4"
+        strokeLinejoin="round"
+        fill="none"
+      >
+        <line x1="50" y1="5" x2="50" y2="22" />
+        <line x1="11" y1="27.5" x2="50" y2="22" />
+        <line x1="89" y1="27.5" x2="50" y2="22" />
+        <line x1="11" y1="27.5" x2="25" y2="65" />
+        <line x1="89" y1="27.5" x2="75" y2="65" />
+        <line x1="11" y1="72.5" x2="25" y2="65" />
+        <line x1="89" y1="72.5" x2="75" y2="65" />
+        <line x1="25" y1="65" x2="50" y2="95" />
+        <line x1="75" y1="65" x2="50" y2="95" />
+      </g>
+
+      {/* the rolled value, sitting in the wider lower half of the front face */}
       <text
         x="50"
-        y="60"
+        y="55"
         textAnchor="middle"
-        fontSize="30"
+        fontSize="22"
         fontWeight="800"
         fill="white"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
         style={{ paintOrder: "stroke fill" }}
-        stroke="rgba(0,0,0,0.4)"
+        stroke="rgba(0,0,0,0.45)"
         strokeWidth="1.2"
       >
         {value}
