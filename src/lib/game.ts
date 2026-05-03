@@ -85,3 +85,9 @@ const OUTCOME_LABELS: Record<Outcome, string> = {
 export function outcomeLabel(o: Outcome): string {
   return OUTCOME_LABELS[o];
 }
+
+const OUT_OUTCOMES: ReadonlySet<Outcome> = new Set(["so", "gb", "fb", "pu"]);
+
+export function isOut(o: Outcome): boolean {
+  return OUT_OUTCOMES.has(o);
+}

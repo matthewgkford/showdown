@@ -11,6 +11,7 @@ import {
   type Outcome,
   calculateAdvantage,
   getOutcome,
+  isOut,
   outcomeLabel,
   rollD20,
 } from "@/lib/game";
@@ -507,7 +508,11 @@ function FieldView({
         transition={{ type: "spring", stiffness: 380, damping: 22 }}
         className="text-center shrink-0"
       >
-        <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">
+        <div
+          className={`text-2xl sm:text-3xl font-bold tracking-tight ${
+            isOut(outcome) ? "text-rose-400" : "text-emerald-400"
+          }`}
+        >
           {outcomeLabel(outcome).toUpperCase()}
         </div>
         <div className="text-xs sm:text-sm text-zinc-400">

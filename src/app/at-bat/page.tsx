@@ -11,6 +11,7 @@ import {
   type Outcome,
   calculateAdvantage,
   getOutcome,
+  isOut,
   outcomeLabel,
   rollD20,
 } from "@/lib/game";
@@ -276,7 +277,11 @@ function CenterPanel({
             <div className="text-[10px] sm:text-xs text-zinc-500">
               {stage.pitchRoll}+{pitcher.control} → {advantageHolder} adv · swing {stage.swingRoll}
             </div>
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">
+            <div
+              className={`text-2xl sm:text-3xl font-bold tracking-tight ${
+                isOut(stage.outcome) ? "text-rose-400" : "text-emerald-400"
+              }`}
+            >
               {outcomeLabel(stage.outcome).toUpperCase()}
             </div>
             <button
