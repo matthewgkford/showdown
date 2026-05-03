@@ -586,7 +586,9 @@ function FieldView({
           onClick={onNext}
           className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
         >
-          Next batter →
+          {halfEnded
+            ? `${game.half === "top" ? "Top" : "Bottom"} of ${game.inning} →`
+            : "Next batter →"}
         </button>
       )}
     </div>
