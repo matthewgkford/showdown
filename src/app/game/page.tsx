@@ -220,11 +220,9 @@ type Stage =
       swingRoll: number;
     }
   | {
-      kind: "batter-settled";
-      pitchRoll: number;
-      advantage: Advantage;
-      swingRoll: number;
+      kind: "field";
       outcome: Outcome;
+      justBatted: BatterCard;
     };
 
 function Play({
@@ -257,16 +255,15 @@ function Play({
     setStage({ kind: "batter-rolling", pitchRoll, advantage, swingRoll });
     setTimeout(() => {
       const outcome = getOutcome(pitcher, batter, advantage, swingRoll);
-      setStage({
-        kind: "batter-settled",
-        pitchRoll,
-        advantage,
-        swingRoll,
-        outcome,
-      });
-      // Apply outcome to the game state — diamond, scoreboard, batter
-      // index, half-inning flip all happen here.
-      setGame((g) => applyAtBatOutcome(g, outcome));
+      // Capture the batter who just hit before state advances.
+      const justBatted = batter;
+      setStage({ kind: "field", outcome, justBatted });
+      // Brief delay so the field renders with the pre-apply bases first;
+      // when state then updates, runner cards animate to their new bases
+      // via shared layoutId.
+      setTimeout(() => {
+        setGame((g) => applyAtBatOutcome(g, outcome));
+      }, 120);
     }, DICE_TUMBLE_MS);
   }
 
@@ -288,17 +285,13 @@ function Play({
         : "settled";
 
   const swingValue =
-    stage.kind === "batter-rolling" || stage.kind === "batter-settled"
-      ? stage.swingRoll
-      : null;
+    stage.kind === "batter-rolling" ? stage.swingRoll : null;
   const swingStatus =
     stage.kind === "pitcher-settled"
       ? "idle"
       : stage.kind === "batter-rolling"
         ? "rolling"
-        : stage.kind === "batter-settled"
-          ? "settled"
-          : "idle";
+        : "idle";
 
   const advantage = "advantage" in stage ? stage.advantage : null;
   const advantageHolder =
@@ -312,54 +305,57 @@ function Play({
 
   return (
     <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-3 sm:px-6 sm:py-4">
-      {/* top bar: scoreboard + diamond */}
       <header className="shrink-0 mb-2 flex items-center gap-3">
-        <button
-          onClick={onEnd}
-          className="text-xs text-zinc-500 hover:text-zinc-200"
-        >
+        <button onClick={onEnd} className="text-xs text-zinc-500 hover:text-zinc-200">
           End
         </button>
         <div className="flex-1 min-w-0">
           <Scoreboard state={game} />
         </div>
-        <BaseDiamond bases={game.bases} />
+        {stage.kind !== "field" && <BaseDiamond bases={game.bases} />}
       </header>
 
-      {/* card row */}
-      <div className="flex-1 min-h-0 grid grid-cols-2 gap-3 sm:gap-6">
-        <CardSlot label={`P · ${pitcher.name}`} card={pitcher} disabled={isLocked} />
-        <CardSlot
-          label={`#${currentBatterSlot(game) + 1} · ${batter.name}`}
-          card={batter}
-          disabled={isLocked}
-        />
-      </div>
-
-      {/* dice + center status */}
-      <div className="shrink-0 mt-3 flex items-center justify-around gap-3">
-        <Dice
-          tone="pitcher"
-          status={pitchStatus}
-          value={pitchValue}
-          label={`+${pitcher.control}`}
-          onTap={stage.kind === "idle" ? tapPitcher : undefined}
-        />
-        <Center
-          stage={stage}
-          pitcher={pitcher}
-          batter={batter}
-          advantageHolder={advantageHolder}
+      {stage.kind === "field" ? (
+        <FieldView
+          game={game}
+          outcome={stage.outcome}
+          justBatted={stage.justBatted}
           onNext={nextBatter}
         />
-        <Dice
-          tone="batter"
-          status={swingStatus}
-          value={swingValue}
-          label={`OB ${batter.onBase}`}
-          onTap={stage.kind === "pitcher-settled" ? tapBatter : undefined}
-        />
-      </div>
+      ) : (
+        <>
+          <div className="flex-1 min-h-0 grid grid-cols-2 gap-3 sm:gap-6">
+            <CardSlot label={`P · ${pitcher.name}`} card={pitcher} disabled={isLocked} />
+            <CardSlot
+              label={`#${currentBatterSlot(game) + 1} · ${batter.name}`}
+              card={batter}
+              disabled={isLocked}
+            />
+          </div>
+          <div className="shrink-0 mt-3 flex items-center justify-around gap-3">
+            <Dice
+              tone="pitcher"
+              status={pitchStatus}
+              value={pitchValue}
+              label={`+${pitcher.control}`}
+              onTap={stage.kind === "idle" ? tapPitcher : undefined}
+            />
+            <Center
+              stage={stage}
+              pitcher={pitcher}
+              batter={batter}
+              advantageHolder={advantageHolder}
+            />
+            <Dice
+              tone="batter"
+              status={swingStatus}
+              value={swingValue}
+              label={`OB ${batter.onBase}`}
+              onTap={stage.kind === "pitcher-settled" ? tapBatter : undefined}
+            />
+          </div>
+        </>
+      )}
     </main>
   );
 }
@@ -406,13 +402,11 @@ function Center({
   pitcher,
   batter,
   advantageHolder,
-  onNext,
 }: {
   stage: Stage;
   pitcher: PitcherCard;
   batter: BatterCard;
   advantageHolder: string | null;
-  onNext: () => void;
 }) {
   return (
     <div className="flex-1 min-w-0 text-center">
@@ -474,27 +468,132 @@ function Center({
             …
           </motion.div>
         )}
-        {stage.kind === "batter-settled" && (
-          <motion.div
-            key="batter-settled"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 22 }}
-            className="space-y-1"
-          >
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">
-              {outcomeLabel(stage.outcome).toUpperCase()}
-            </div>
-            <button
-              onClick={onNext}
-              className="rounded-full bg-zinc-800 px-4 py-1.5 text-xs sm:text-sm text-zinc-200 hover:bg-zinc-700"
-            >
-              Next batter
-            </button>
-          </motion.div>
-        )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Field view: between at-bats. Big diamond with each runner's card on
+// their base. Cards animate via shared layoutId when state updates.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FieldView({
+  game,
+  outcome,
+  justBatted,
+  onNext,
+}: {
+  game: GameState;
+  outcome: Outcome;
+  justBatted: BatterCard;
+  onNext: () => void;
+}) {
+  return (
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-2">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+        className="text-center shrink-0"
+      >
+        <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">
+          {outcomeLabel(outcome).toUpperCase()}
+        </div>
+        <div className="text-xs sm:text-sm text-zinc-400">
+          {justBatted.name}
+        </div>
+      </motion.div>
+
+      <Field bases={game.bases} />
+
+      <button
+        onClick={onNext}
+        className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
+      >
+        Next batter →
+      </button>
+    </div>
+  );
+}
+
+function Field({ bases }: { bases: { first: BatterCard | null; second: BatterCard | null; third: BatterCard | null } }) {
+  return (
+    <div className="relative aspect-square w-full max-w-[min(70vh,420px)]">
+      <svg
+        viewBox="0 0 100 100"
+        className="absolute inset-0 h-full w-full"
+        preserveAspectRatio="none"
+      >
+        {/* infield */}
+        <polygon
+          points="50,12 88,50 50,88 12,50"
+          fill="rgba(34,197,94,0.05)"
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth="0.4"
+          strokeDasharray="2 2"
+        />
+        {/* bases */}
+        <BaseSquare cx={88} cy={50} occupied={!!bases.first} />
+        <BaseSquare cx={50} cy={12} occupied={!!bases.second} />
+        <BaseSquare cx={12} cy={50} occupied={!!bases.third} />
+        {/* home plate */}
+        <rect
+          x={45}
+          y={84}
+          width={10}
+          height={10}
+          transform="rotate(45 50 89)"
+          fill="rgba(255,255,255,0.35)"
+        />
+      </svg>
+
+      {bases.first && <RunnerCard card={bases.first} cornerClass="right-0 top-1/2 -translate-y-1/2" />}
+      {bases.second && <RunnerCard card={bases.second} cornerClass="left-1/2 -translate-x-1/2 top-0" />}
+      {bases.third && <RunnerCard card={bases.third} cornerClass="left-0 top-1/2 -translate-y-1/2" />}
+    </div>
+  );
+}
+
+function BaseSquare({ cx, cy, occupied }: { cx: number; cy: number; occupied: boolean }) {
+  return (
+    <rect
+      x={cx - 3}
+      y={cy - 3}
+      width={6}
+      height={6}
+      transform={`rotate(45 ${cx} ${cy})`}
+      fill={occupied ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.05)"}
+      stroke={occupied ? "#10b981" : "rgba(255,255,255,0.3)"}
+      strokeWidth={0.6}
+    />
+  );
+}
+
+function RunnerCard({
+  card,
+  cornerClass,
+}: {
+  card: BatterCard;
+  cornerClass: string;
+}) {
+  return (
+    <motion.div
+      layoutId={`runner-${card.id}`}
+      transition={{ type: "spring", stiffness: 280, damping: 26 }}
+      className={`absolute ${cornerClass} flex flex-col items-center w-[22%]`}
+    >
+      <Image
+        src={`/cards/${card.id}.png`}
+        alt={card.name}
+        width={1488}
+        height={2079}
+        className="block w-full h-auto rounded-md shadow-lg shadow-black/60 ring-1 ring-emerald-400/40"
+        sizes="120px"
+      />
+      <div className="mt-1 max-w-full truncate text-[10px] font-semibold text-zinc-200">
+        {card.name.split(" ").slice(-1)[0]}
+      </div>
+    </motion.div>
   );
 }
