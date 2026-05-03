@@ -108,44 +108,48 @@ function D20({
         </linearGradient>
       </defs>
 
-      {/* outer hexagonal silhouette of the d20 */}
+      {/*
+        Regular pointy-top hexagon, vertices T, TR, BR, B, BL, TL.
+        Inscribing an equilateral triangle by connecting T-BL-BR
+        leaves 3 isosceles "ear" triangles around it (T-TR-BR,
+        BL-B-BR, TL-T-BL). All four shapes are real triangles —
+        no quadrilaterals — and the front face is equilateral.
+      */}
+      {/* hexagonal silhouette filled with the gradient */}
       <polygon
-        points="50,4 92,28 92,72 50,96 8,72 8,28"
+        points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5"
         fill={`url(#${gradId})`}
-        stroke="rgba(0,0,0,0.45)"
+        stroke="rgba(0,0,0,0.5)"
         strokeWidth="1"
         strokeLinejoin="round"
       />
 
-      {/* surrounding facets — light/dark to suggest 3D faceting */}
-      <polygon points="50,4 92,28 50,28" fill="rgba(255,255,255,0.18)" />
-      <polygon points="50,4 8,28 50,28" fill="rgba(255,255,255,0.06)" />
-      <polygon points="92,28 92,72 70,72 50,28" fill="rgba(0,0,0,0.10)" />
-      <polygon points="8,28 50,28 30,72 8,72" fill="rgba(0,0,0,0.04)" />
-      <polygon points="92,72 70,72 50,96" fill="rgba(0,0,0,0.22)" />
-      <polygon points="8,72 30,72 50,96" fill="rgba(0,0,0,0.30)" />
+      {/* three surrounding "ear" triangles, dark to suggest receding faces */}
+      <polygon points="50,5 89,27.5 89,72.5" fill="rgba(0,0,0,0.18)" />
+      <polygon points="11,72.5 50,95 89,72.5" fill="rgba(0,0,0,0.30)" />
+      <polygon points="11,27.5 50,5 11,72.5" fill="rgba(0,0,0,0.06)" />
 
-      {/* central up-pointing triangle = the visible face holding the number */}
+      {/* equilateral front face holding the rolled value */}
       <polygon
-        points="50,28 70,72 30,72"
-        fill="rgba(255,255,255,0.20)"
-        stroke="rgba(255,255,255,0.55)"
+        points="50,5 11,72.5 89,72.5"
+        fill="rgba(255,255,255,0.10)"
+        stroke="rgba(255,255,255,0.5)"
         strokeWidth="0.8"
         strokeLinejoin="round"
       />
 
-      {/* the rolled value, sitting in the wide part of the front face */}
+      {/* the rolled value */}
       <text
         x="50"
-        y="62"
+        y="60"
         textAnchor="middle"
-        fontSize={typeof value === "number" && value >= 10 ? "26" : "30"}
+        fontSize="30"
         fontWeight="800"
         fill="white"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
         style={{ paintOrder: "stroke fill" }}
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth="1"
+        stroke="rgba(0,0,0,0.4)"
+        strokeWidth="1.2"
       >
         {value}
       </text>
