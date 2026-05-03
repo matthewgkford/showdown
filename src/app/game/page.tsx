@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import cardsData from "@data/cards.json";
+import teamsData from "@data/teams.json";
 import type { BatterCard, Card as CardType, PitcherCard } from "@/types/card";
+import type { Team } from "@/types/team";
 import {
   type Advantage,
   type Outcome,
@@ -30,6 +32,30 @@ import { Scoreboard } from "@/components/Scoreboard";
 const cards = cardsData as CardType[];
 const allBatters = cards.filter((c): c is BatterCard => c.cardType === "batter");
 const allPitchers = cards.filter((c): c is PitcherCard => c.cardType === "pitcher");
+const teams = teamsData as Team[];
+
+function shuffle<T>(xs: T[]): T[] {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Pick 9 batters + 1 pitcher per team out of the full pool, no duplicates
+// across the two teams. With 21 batters and 8 pitchers there are leftovers.
+function randomLineups(): {
+  away: { lineup: BatterCard[]; pitcher: PitcherCard };
+  home: { lineup: BatterCard[]; pitcher: PitcherCard };
+} {
+  const b = shuffle(allBatters);
+  const p = shuffle(allPitchers);
+  return {
+    away: { lineup: b.slice(0, 9), pitcher: p[0] },
+    home: { lineup: b.slice(9, 18), pitcher: p[1] ?? p[0] },
+  };
+}
 
 type Phase =
   | { kind: "setup" }
@@ -41,9 +67,16 @@ export default function GamePage() {
   if (phase.kind === "setup") {
     return (
       <Setup
-        onStart={(away, home) =>
-          setPhase({ kind: "playing", game: startGame(away, home) })
-        }
+        onStart={(awayTeam, homeTeam) => {
+          const { away, home } = randomLineups();
+          setPhase({
+            kind: "playing",
+            game: startGame(
+              { team: awayTeam, ...away },
+              { team: homeTeam, ...home },
+            ),
+          });
+        }}
       />
     );
   }
@@ -57,31 +90,24 @@ export default function GamePage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Setup phase: pick lineups + pitchers
+// Setup phase: pick which team is away vs home (rosters auto-randomize)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Setup({
   onStart,
 }: {
-  onStart: (
-    away: { lineup: BatterCard[]; pitcher: PitcherCard },
-    home: { lineup: BatterCard[]; pitcher: PitcherCard },
-  ) => void;
+  onStart: (away: Team, home: Team) => void;
 }) {
-  // Default split: first 9 batters → away, next 9 → home.
-  const [awayPitcher, setAwayPitcher] = useState<PitcherCard>(allPitchers[0]);
-  const [homePitcher, setHomePitcher] = useState<PitcherCard>(
-    allPitchers[1] ?? allPitchers[0],
-  );
-  const [awayLineup, setAwayLineup] = useState<BatterCard[]>(
-    allBatters.slice(0, 9),
-  );
-  const [homeLineup, setHomeLineup] = useState<BatterCard[]>(
-    allBatters.slice(9, 18),
-  );
+  const [awayId, setAwayId] = useState<string>(teams[0].id);
+  const homeTeam = teams.find((t) => t.id !== awayId) ?? teams[1];
+  const awayTeam = teams.find((t) => t.id === awayId) ?? teams[0];
+
+  function swap() {
+    setAwayId(homeTeam.id);
+  }
 
   return (
-    <main className="min-h-[100dvh] bg-zinc-950 text-zinc-100 px-4 py-6 sm:px-8">
+    <main className="min-h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 px-4 py-6 sm:px-8">
       <header className="mb-6 flex items-baseline justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">New game</h1>
         <Link href="/" className="text-xs text-zinc-400 hover:text-zinc-200">
@@ -89,36 +115,27 @@ function Setup({
         </Link>
       </header>
 
-      <div className="grid grid-cols-2 gap-4 sm:gap-8">
-        <TeamSetup
-          label="Away"
-          pitcher={awayPitcher}
-          lineup={awayLineup}
-          onPitcherChange={setAwayPitcher}
-          onSlotChange={(idx, b) => {
-            setAwayLineup((l) => l.map((slot, i) => (i === idx ? b : slot)));
-          }}
-        />
-        <TeamSetup
-          label="Home"
-          pitcher={homePitcher}
-          lineup={homeLineup}
-          onPitcherChange={setHomePitcher}
-          onSlotChange={(idx, b) => {
-            setHomeLineup((l) => l.map((slot, i) => (i === idx ? b : slot)));
-          }}
-        />
-      </div>
+      <div className="flex-1 flex flex-col items-center justify-center gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-12 items-center">
+          <TeamCard team={awayTeam} role="Away" />
+          <TeamCard team={homeTeam} role="Home" />
+        </div>
 
-      <div className="mt-8 flex justify-center">
         <button
-          onClick={() =>
-            onStart(
-              { lineup: awayLineup, pitcher: awayPitcher },
-              { lineup: homeLineup, pitcher: homePitcher },
-            )
-          }
-          className="rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-emerald-400 active:bg-emerald-600"
+          onClick={swap}
+          className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-2"
+        >
+          ⇄ swap home/away
+        </button>
+
+        <p className="text-xs text-zinc-500 max-w-xs text-center">
+          Rosters are randomized at game start — 9 batters and 1 pitcher per
+          team, no overlap between teams.
+        </p>
+
+        <button
+          onClick={() => onStart(awayTeam, homeTeam)}
+          className="rounded-full bg-emerald-500 px-10 py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-emerald-400 active:bg-emerald-600"
         >
           Play ball
         </button>
@@ -127,83 +144,33 @@ function Setup({
   );
 }
 
-function TeamSetup({
-  label,
-  pitcher,
-  lineup,
-  onPitcherChange,
-  onSlotChange,
-}: {
-  label: string;
-  pitcher: PitcherCard;
-  lineup: BatterCard[];
-  onPitcherChange: (p: PitcherCard) => void;
-  onSlotChange: (idx: number, b: BatterCard) => void;
-}) {
+function TeamCard({ team, role }: { team: Team; role: string }) {
   return (
-    <section>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-        {label}
-      </h2>
-      <div className="space-y-2">
-        <SetupRow
-          slot="P"
-          value={pitcher.id}
-          onChange={(id) => {
-            const p = allPitchers.find((x) => x.id === id);
-            if (p) onPitcherChange(p);
-          }}
-          options={allPitchers.map((p) => ({
-            id: p.id,
-            label: `${p.name} · Ctrl ${p.control} · IP ${p.ip}`,
-          }))}
-        />
-        {lineup.map((b, idx) => (
-          <SetupRow
-            key={idx}
-            slot={String(idx + 1)}
-            value={b.id}
-            onChange={(id) => {
-              const next = allBatters.find((x) => x.id === id);
-              if (next) onSlotChange(idx, next);
-            }}
-            options={allBatters.map((bb) => ({
-              id: bb.id,
-              label: `${bb.name} · OB ${bb.onBase}`,
-            }))}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function SetupRow({
-  slot,
-  value,
-  onChange,
-  options,
-}: {
-  slot: string;
-  value: string;
-  onChange: (id: string) => void;
-  options: { id: string; label: string }[];
-}) {
-  return (
-    <label className="flex items-center gap-2 text-xs sm:text-sm">
-      <span className="w-5 shrink-0 text-right font-mono text-zinc-500">{slot}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+    <div className="flex flex-col items-center gap-3">
+      <div
+        className="flex h-32 w-32 sm:h-40 sm:w-40 items-center justify-center rounded-2xl bg-zinc-900/60 ring-2"
+        style={{
+          // tint the ring with the team color
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ["--tw-ring-color" as any]: team.color,
+        }}
       >
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+        <Image
+          src={team.logoUrl}
+          alt={team.name}
+          width={320}
+          height={320}
+          className="h-24 w-24 sm:h-32 sm:w-32 object-contain"
+          priority
+        />
+      </div>
+      <div className="text-center">
+        <div className="text-base sm:text-lg font-bold" style={{ color: team.color }}>
+          {team.name}
+        </div>
+        <div className="text-[10px] uppercase tracking-wider text-zinc-500">{role}</div>
+      </div>
+    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import type { GameState } from "@/lib/gameState";
+import type { GameState, TeamState } from "@/lib/gameState";
 
 export function Scoreboard({ state }: { state: GameState }) {
   return (
@@ -11,9 +11,9 @@ export function Scoreboard({ state }: { state: GameState }) {
       </div>
 
       <div className="flex items-center gap-2 font-mono">
-        <TeamScore label="AWAY" runs={state.away.runs} batting={state.half === "top"} />
+        <TeamScore team={state.away} batting={state.half === "top"} />
         <span className="text-zinc-700">·</span>
-        <TeamScore label="HOME" runs={state.home.runs} batting={state.half === "bottom"} reverse />
+        <TeamScore team={state.home} batting={state.half === "bottom"} reverse />
       </div>
 
       <div className="flex items-center gap-1">
@@ -32,27 +32,31 @@ export function Scoreboard({ state }: { state: GameState }) {
 }
 
 function TeamScore({
-  label,
-  runs,
+  team,
   batting,
   reverse,
 }: {
-  label: string;
-  runs: number;
+  team: TeamState;
   batting: boolean;
   reverse?: boolean;
 }) {
   const dot = (
     <span
-      className={`h-1.5 w-1.5 rounded-full ${batting ? "bg-emerald-400" : "bg-transparent"}`}
+      className="h-1.5 w-1.5 rounded-full"
+      style={{ backgroundColor: batting ? team.team.color : "transparent" }}
       aria-hidden
     />
   );
   return (
     <div className="flex items-center gap-1">
       {!reverse && dot}
-      <span className={batting ? "text-emerald-300" : "text-zinc-300"}>{label}</span>
-      <span className="text-zinc-100 font-bold tabular-nums">{runs}</span>
+      <span
+        className="font-semibold"
+        style={{ color: batting ? team.team.color : undefined }}
+      >
+        {team.team.shortName}
+      </span>
+      <span className="text-zinc-100 font-bold tabular-nums">{team.runs}</span>
       {reverse && dot}
     </div>
   );

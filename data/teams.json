@@ -1,0 +1,16 @@
+[
+  {
+    "id": "red-boys",
+    "name": "Red Boys",
+    "shortName": "RED",
+    "color": "#dc2626",
+    "logoUrl": "/teams/red-boys.png"
+  },
+  {
+    "id": "blue-boys",
+    "name": "Blue Boys",
+    "shortName": "BLU",
+    "color": "#2563eb",
+    "logoUrl": "/teams/blue-boys.png"
+  }
+]

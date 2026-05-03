@@ -1,4 +1,5 @@
 import type { BatterCard, PitcherCard } from "@/types/card";
+import type { Team } from "@/types/team";
 import type { Outcome } from "./game";
 
 export type Half = "top" | "bottom";
@@ -10,6 +11,7 @@ export type Bases = {
 };
 
 export type TeamState = {
+  team: Team;
   lineup: BatterCard[]; // 9 batters in order
   pitcher: PitcherCard;
   battingIndex: number; // 0..lineup.length-1, who's up next
@@ -28,8 +30,8 @@ export type GameState = {
 export const EMPTY_BASES: Bases = { first: null, second: null, third: null };
 
 export function startGame(
-  away: { lineup: BatterCard[]; pitcher: PitcherCard },
-  home: { lineup: BatterCard[]; pitcher: PitcherCard },
+  away: { team: Team; lineup: BatterCard[]; pitcher: PitcherCard },
+  home: { team: Team; lineup: BatterCard[]; pitcher: PitcherCard },
 ): GameState {
   return {
     inning: 1,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BatterCard, PitcherCard } from "@/types/card";
+import type { Team } from "@/types/team";
 import {
   EMPTY_BASES,
   applyAtBatOutcome,
@@ -8,6 +9,21 @@ import {
   startGame,
   type GameState,
 } from "./gameState";
+
+const awayTeam: Team = {
+  id: "away",
+  name: "Away",
+  shortName: "AWY",
+  color: "#888",
+  logoUrl: "/teams/away.png",
+};
+const homeTeam: Team = {
+  id: "home",
+  name: "Home",
+  shortName: "HME",
+  color: "#888",
+  logoUrl: "/teams/home.png",
+};
 
 // Synthetic cards — we don't care about the chart values here, only that
 // each batter is identifiable by id when they end up on a base.
@@ -69,8 +85,8 @@ const homeLineup = Array.from({ length: 9 }, (_, i) => batter(`h${i}`));
 
 function freshGame(): GameState {
   return startGame(
-    { lineup: awayLineup, pitcher: fakePitcher },
-    { lineup: homeLineup, pitcher: fakePitcher },
+    { team: awayTeam, lineup: awayLineup, pitcher: fakePitcher },
+    { team: homeTeam, lineup: homeLineup, pitcher: fakePitcher },
   );
 }
 
