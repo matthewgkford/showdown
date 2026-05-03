@@ -4,6 +4,7 @@ import type { Team } from "@/types/team";
 import {
   EMPTY_BASES,
   applyAtBatOutcome,
+  checkGameOver,
   currentBatter,
   currentPitcher,
   startGame,
@@ -323,5 +324,107 @@ describe("batting index", () => {
     const g = applyAtBatOutcome(freshGame(), "single");
     expect(g.away.battingIndex).toBe(1);
     expect(g.home.battingIndex).toBe(0);
+  });
+});
+
+describe("checkGameOver", () => {
+  it("returns null in early innings regardless of score", () => {
+    const g: GameState = {
+      ...freshGame(),
+      inning: 3,
+      half: "bottom",
+      home: { ...freshGame().home, runs: 5 },
+      away: { ...freshGame().away, runs: 0 },
+    };
+    expect(checkGameOver(g)).toBeNull();
+  });
+
+  it("walk-off: home leads in bottom of 9th → home wins", () => {
+    const g: GameState = {
+      ...freshGame(),
+      inning: 9,
+      half: "bottom",
+      home: { ...freshGame().home, runs: 4 },
+      away: { ...freshGame().away, runs: 3 },
+    };
+    expect(checkGameOver(g)).toEqual({ winner: "home" });
+  });
+
+  it("home leads after top of 9th → bottom of 9th not needed (home wins)", () => {
+    // After top of 9th's 3rd out, half flips to bottom, outs reset to 0.
+    const g: GameState = {
+      ...freshGame(),
+      inning: 9,
+      half: "bottom",
+      outs: 0,
+      home: { ...freshGame().home, runs: 5 },
+      away: { ...freshGame().away, runs: 2 },
+    };
+    expect(checkGameOver(g)).toEqual({ winner: "home" });
+  });
+
+  it("home tied or behind in bottom of 9th → game continues", () => {
+    const tied: GameState = {
+      ...freshGame(),
+      inning: 9,
+      half: "bottom",
+      home: { ...freshGame().home, runs: 3 },
+      away: { ...freshGame().away, runs: 3 },
+    };
+    expect(checkGameOver(tied)).toBeNull();
+
+    const behind: GameState = {
+      ...freshGame(),
+      inning: 9,
+      half: "bottom",
+      home: { ...freshGame().home, runs: 2 },
+      away: { ...freshGame().away, runs: 4 },
+    };
+    expect(checkGameOver(behind)).toBeNull();
+  });
+
+  it("after bottom of 9th: away leads → away wins", () => {
+    // bottom 9 finishes → half flips to top, inning becomes 10.
+    const g: GameState = {
+      ...freshGame(),
+      inning: 10,
+      half: "top",
+      home: { ...freshGame().home, runs: 2 },
+      away: { ...freshGame().away, runs: 5 },
+    };
+    expect(checkGameOver(g)).toEqual({ winner: "away" });
+  });
+
+  it("after bottom of 9th: home leads → home wins", () => {
+    const g: GameState = {
+      ...freshGame(),
+      inning: 10,
+      half: "top",
+      home: { ...freshGame().home, runs: 6 },
+      away: { ...freshGame().away, runs: 2 },
+    };
+    expect(checkGameOver(g)).toEqual({ winner: "home" });
+  });
+
+  it("tied after bottom of 9th → null (extras territory, deferred)", () => {
+    const g: GameState = {
+      ...freshGame(),
+      inning: 10,
+      half: "top",
+      home: { ...freshGame().home, runs: 3 },
+      away: { ...freshGame().away, runs: 3 },
+    };
+    expect(checkGameOver(g)).toBeNull();
+  });
+
+  it("walk-off in extras (e.g. bottom of 10th, home goes ahead)", () => {
+    const g: GameState = {
+      ...freshGame(),
+      inning: 10,
+      half: "bottom",
+      home: { ...freshGame().home, runs: 4 },
+      away: { ...freshGame().away, runs: 3 },
+    };
+    expect(checkGameOver(g)).toEqual({ winner: "home" });
   });
 });

@@ -21,6 +21,7 @@ import {
   type Bases,
   type GameState,
   applyAtBatOutcome,
+  checkGameOver,
   currentBatter,
   currentPitcher,
   startGame,
@@ -290,6 +291,7 @@ function Play({
           outcome={stage.outcome}
           justBatted={stage.justBatted}
           onNext={nextBatter}
+          onPlayAgain={onEnd}
         />
       ) : (
         <>
@@ -528,15 +530,18 @@ function FieldView({
   outcome,
   justBatted,
   onNext,
+  onPlayAgain,
 }: {
   game: GameState;
   preBases: Bases;
   outcome: Outcome;
   justBatted: BatterCard;
   onNext: () => void;
+  onPlayAgain: () => void;
 }) {
   // The half flips back to outs=0 only when the 3rd out lands.
   const halfEnded = isOut(outcome) && game.outs === 0;
+  const gameOver = checkGameOver(game);
 
   const frames = useMemo(
     () => computeSteps(preBases, game.bases, justBatted, outcome, halfEnded),
@@ -570,7 +575,7 @@ function FieldView({
           {outcomeLabel(outcome).toUpperCase()}
         </div>
         <div className="text-xs sm:text-sm text-zinc-400">{justBatted.name}</div>
-        {halfEnded && (
+        {halfEnded && !gameOver && (
           <div className="mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wider text-rose-400">
             Side retired
           </div>
@@ -581,6 +586,8 @@ function FieldView({
 
       {isAnimating ? (
         <div className="h-10" aria-hidden />
+      ) : gameOver ? (
+        <GameOverPanel game={game} winner={gameOver.winner} onPlayAgain={onPlayAgain} />
       ) : (
         <button
           onClick={onNext}
@@ -592,6 +599,67 @@ function FieldView({
         </button>
       )}
     </div>
+  );
+}
+
+function GameOverPanel({
+  game,
+  winner,
+  onPlayAgain,
+}: {
+  game: GameState;
+  winner: "home" | "away";
+  onPlayAgain: () => void;
+}) {
+  const winningTeam = winner === "home" ? game.home.team : game.away.team;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 320, damping: 24 }}
+      className="shrink-0 flex flex-col items-center gap-2"
+    >
+      <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+        Final
+      </div>
+      <div
+        className="text-lg sm:text-xl font-bold tracking-tight"
+        style={{ color: winningTeam.color }}
+      >
+        {winningTeam.name} win
+      </div>
+      <div className="flex items-center gap-3 font-mono">
+        <FinalScore team={game.away} winning={winner === "away"} />
+        <span className="text-zinc-700">·</span>
+        <FinalScore team={game.home} winning={winner === "home"} />
+      </div>
+      <button
+        onClick={onPlayAgain}
+        className="mt-1 rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
+      >
+        Play again
+      </button>
+    </motion.div>
+  );
+}
+
+function FinalScore({
+  team,
+  winning,
+}: {
+  team: GameState["away"];
+  winning: boolean;
+}) {
+  return (
+    <span
+      className={`flex items-baseline gap-1.5 ${winning ? "" : "opacity-60"}`}
+      style={{ color: winning ? team.team.color : undefined }}
+    >
+      <span className="text-sm font-semibold">{team.team.shortName}</span>
+      <span className="text-xl sm:text-2xl font-bold tabular-nums">
+        {team.runs}
+      </span>
+    </span>
   );
 }
 

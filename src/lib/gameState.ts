@@ -177,3 +177,28 @@ function onBaseCount(
 ): number {
   return (first ? 1 : 0) + (second ? 1 : 0) + (third ? 1 : 0);
 }
+
+export type GameOverResult = { winner: "home" | "away" };
+
+// Detect game-over per regulation rules (no extras yet — a tied state
+// after 9 innings returns null and play continues until someone leads).
+//
+//   - If we're in the bottom of the 9th (or later) and home leads, the
+//     game ends. Covers both walk-offs and "home was leading at the
+//     start of the bottom of the 9th, so the bottom isn't played."
+//   - Otherwise, if the bottom of the 9th has finished (state has moved
+//     to the top of the 10th) and someone leads, that team wins.
+export function checkGameOver(state: GameState): GameOverResult | null {
+  const { half, inning, away, home } = state;
+
+  if (half === "bottom" && inning >= 9 && home.runs > away.runs) {
+    return { winner: "home" };
+  }
+
+  if (half === "top" && inning >= 10) {
+    if (home.runs > away.runs) return { winner: "home" };
+    if (away.runs > home.runs) return { winner: "away" };
+  }
+
+  return null;
+}
