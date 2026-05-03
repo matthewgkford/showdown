@@ -109,13 +109,12 @@ function CardPicker({
           </option>
         ))}
       </select>
-      <div className="flex-1 min-h-0 mt-2 flex justify-center">
+      <div className="flex-1 min-h-0 mt-2 relative">
         <Image
           src={`/cards/${card.id}.png`}
           alt={card.name}
-          width={1488}
-          height={2079}
-          className="h-full w-auto rounded-lg shadow-md shadow-black/40"
+          fill
+          className="object-contain"
           sizes="50vw"
           priority
         />
