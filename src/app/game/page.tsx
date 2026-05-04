@@ -5,6 +5,7 @@ import {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -45,8 +46,17 @@ import {
   recordPlayerGame,
   subscribe,
 } from "@/lib/season";
+import {
+  clearActiveExhibitionGame,
+  clearActiveSeasonGame,
+  getActiveExhibitionGame,
+  getActiveSeasonGame,
+  saveActiveExhibitionGame,
+  saveActiveSeasonGame,
+} from "@/lib/activeGame";
 import { getEffectiveRoster } from "@/lib/rosters";
 import { getTeamBySlug } from "@/lib/teams";
+import { getTeamDisplayColor } from "@/lib/teamColor";
 import { DICE_TUMBLE_MS, Dice } from "@/components/Dice";
 import { BaseDiamond } from "@/components/BaseDiamond";
 import { Scoreboard } from "@/components/Scoreboard";
@@ -132,11 +142,22 @@ function GamePageInner() {
     return { round, awaySlug, homeSlug };
   }, [searchParams]);
 
-  // For season matchups, derive the game state directly from URL + season
-  // snapshot. Each team's roster comes from data/rosters.json with the
-  // opponent's stats scaled by the current league tier (player's roster
-  // never scales). Returns null while season state is hydrating.
-  const seasonGame = useMemo<GameState | null>(() => {
+  // Which side does the player physically control? "home" or "away" in
+  // season mode, null in exhibition (where the player drives both teams).
+  const playerSide: "home" | "away" | null = useMemo(() => {
+    if (!seasonCtx || !season) return null;
+    if (season.playerTeamSlug === seasonCtx.awaySlug) return "away";
+    if (season.playerTeamSlug === seasonCtx.homeSlug) return "home";
+    return null;
+  }, [seasonCtx, season]);
+
+  // For season matchups, derive the initial game state from URL + season
+  // snapshot. Restores from localStorage if a saved game matches the URL;
+  // otherwise builds a fresh matchup. Each team's roster comes from
+  // data/rosters.json with the opponent's stats scaled by the current
+  // league tier (player's roster never scales). Returns null while season
+  // state is hydrating.
+  const seasonInitialGame = useMemo<GameState | null>(() => {
     if (!seasonCtx || !season) return null;
     const entry = season.schedule.find(
       (g) =>
@@ -145,6 +166,18 @@ function GamePageInner() {
         g.homeSlug === seasonCtx.homeSlug,
     );
     if (!entry || entry.result !== null) return null;
+
+    // Saved game matching this matchup? Resume.
+    const saved = getActiveSeasonGame();
+    if (
+      saved &&
+      saved.round === seasonCtx.round &&
+      saved.awaySlug === seasonCtx.awaySlug &&
+      saved.homeSlug === seasonCtx.homeSlug
+    ) {
+      return saved.state;
+    }
+
     return buildSeasonGame(
       seasonCtx.awaySlug,
       seasonCtx.homeSlug,
@@ -153,28 +186,46 @@ function GamePageInner() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seasonCtx]);
-  // Note: we intentionally don't depend on `season` here. After
-  // recordPlayerGame() the schedule entry will have a result and this
-  // memo would re-evaluate to null mid-game. Computing the initial game
-  // state once when the user lands on /game?season=1&… is what we want;
-  // Play owns its own internal game state from there.
+  // Note: deliberately not depending on `season`. After recordPlayerGame()
+  // the schedule entry will have a result and this memo would re-evaluate
+  // to null mid-game. Compute once when the user lands on the URL; Play
+  // owns its own internal game state from there.
 
-  // Exhibition setup state — only used outside season mode.
-  const [phase, setPhase] = useState<Phase>({ kind: "setup" });
+  // Exhibition mode setup/playing phase. Hydrated lazily from localStorage
+  // so accidentally exiting an exhibition game doesn't lose it either.
+  const [exhibitionPhase, setExhibitionPhase] = useState<Phase>({
+    kind: "setup",
+  });
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (seasonCtx) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHydrated(true);
+      return;
+    }
+    // One-time load from localStorage after mount. Doing this in a lazy
+    // useState initializer would cause a hydration mismatch (server has
+    // no window). The setState-in-effect pattern is correct here.
+    const saved = getActiveExhibitionGame();
+    if (saved) {
+      setExhibitionPhase({ kind: "playing", game: saved.state });
+    }
+    setHydrated(true);
+  }, [seasonCtx]);
 
   // Season mode: bounce back to /season if the schedule entry is missing,
-  // already played, or rosters fail to resolve. This is the only side
-  // effect — initial game state lives in the memo above.
+  // already played, or rosters fail to resolve.
   useEffect(() => {
     if (!seasonCtx) return;
     if (!season) return;
-    if (seasonGame === null) {
+    if (seasonInitialGame === null) {
       router.replace("/season");
     }
-  }, [seasonCtx, season, seasonGame, router]);
+  }, [seasonCtx, season, seasonInitialGame, router]);
 
   if (seasonCtx) {
-    if (!season || !seasonGame) {
+    if (!season || !seasonInitialGame) {
       return (
         <main className="min-h-[100dvh] flex items-center justify-center bg-zinc-950 text-zinc-100">
           <p className="text-sm text-zinc-500">Loading matchup…</p>
@@ -183,7 +234,16 @@ function GamePageInner() {
     }
     return (
       <Play
-        initial={seasonGame}
+        initial={seasonInitialGame}
+        playerSide={playerSide}
+        onPersist={(state) =>
+          saveActiveSeasonGame(
+            seasonCtx.round,
+            seasonCtx.awaySlug,
+            seasonCtx.homeSlug,
+            state,
+          )
+        }
         onEnd={(final) => {
           const over = checkGameOver(final);
           if (over) {
@@ -198,6 +258,7 @@ function GamePageInner() {
               },
             );
           }
+          clearActiveSeasonGame();
           router.push("/season");
         }}
       />
@@ -205,18 +266,25 @@ function GamePageInner() {
   }
 
   // Exhibition mode (no season query params).
-  if (phase.kind === "setup") {
+  if (!hydrated) {
+    return (
+      <main className="min-h-[100dvh] flex items-center justify-center bg-zinc-950 text-zinc-100">
+        <p className="text-sm text-zinc-500">Loading…</p>
+      </main>
+    );
+  }
+
+  if (exhibitionPhase.kind === "setup") {
     return (
       <Setup
         onStart={(awayTeam, homeTeam) => {
           const { away, home } = randomLineups();
-          setPhase({
-            kind: "playing",
-            game: startGame(
-              { team: awayTeam, ...away },
-              { team: homeTeam, ...home },
-            ),
-          });
+          const game = startGame(
+            { team: awayTeam, ...away },
+            { team: homeTeam, ...home },
+          );
+          saveActiveExhibitionGame(awayTeam.slug, homeTeam.slug, game);
+          setExhibitionPhase({ kind: "playing", game });
         }}
       />
     );
@@ -224,8 +292,19 @@ function GamePageInner() {
 
   return (
     <Play
-      initial={phase.game}
-      onEnd={() => setPhase({ kind: "setup" })}
+      initial={exhibitionPhase.game}
+      playerSide={null}
+      onPersist={(state) =>
+        saveActiveExhibitionGame(
+          state.away.team.slug,
+          state.home.team.slug,
+          state,
+        )
+      }
+      onEnd={() => {
+        clearActiveExhibitionGame();
+        setExhibitionPhase({ kind: "setup" });
+      }}
     />
   );
 }
@@ -418,14 +497,30 @@ type Stage =
       preBases: Bases;
     };
 
-const SETTLE_HOLD_MS = 800;
+// Hold on the swing roll for a beat before revealing the outcome — gives
+// the user time to read the number and feel the suspense. Bumped from
+// 800 → 1500ms because the previous timing was too fast to register.
+const SETTLE_HOLD_MS = 1500;
+// Delay before the AI auto-rolls a die on the player's behalf when the
+// opponent is acting. Long enough to feel like the CPU is "thinking,"
+// short enough that the player isn't waiting around.
+const AUTO_PAUSE_MS = 650;
 
 function Play({
   initial,
   onEnd,
+  playerSide,
+  onPersist,
 }: {
   initial: GameState;
   onEnd: (final: GameState) => void;
+  // The side the human player controls. null means exhibition / spectator
+  // — the player taps both sides' dice. Set to "home" or "away" in
+  // season mode based on which slug matches the player's team.
+  playerSide: "home" | "away" | null;
+  // Called whenever the game state changes so the parent can persist it
+  // to localStorage. Gets the latest GameState.
+  onPersist?: (state: GameState) => void;
 }) {
   const [game, setGame] = useState<GameState>(initial);
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
@@ -437,6 +532,28 @@ function Play({
     () => pitcherFatigue(fieldingTeam(game), game.inning),
     [game],
   );
+
+  // Persist on every game state change. We use a ref so we don't have to
+  // memoise onPersist in every parent — the latest callback always wins.
+  const persistRef = useRef(onPersist);
+  useEffect(() => {
+    persistRef.current = onPersist;
+  }, [onPersist]);
+  useEffect(() => {
+    persistRef.current?.(game);
+  }, [game]);
+
+  // Who is the player allowed to control right now?
+  const fieldingSide: "home" | "away" =
+    game.half === "top" ? "home" : "away";
+  const battingSide: "home" | "away" =
+    game.half === "top" ? "away" : "home";
+  const playerCanPitch =
+    stage.kind === "idle" &&
+    (playerSide === null || playerSide === fieldingSide);
+  const playerCanSwing =
+    stage.kind === "pitcher-settled" &&
+    (playerSide === null || playerSide === battingSide);
 
   function tapPitcher() {
     if (stage.kind !== "idle") return;
@@ -454,9 +571,6 @@ function Play({
     const { pitchRoll, advantage } = stage;
     setStage({ kind: "batter-rolling", pitchRoll, advantage, swingRoll });
     setTimeout(() => {
-      // The dice has stopped tumbling — hold on the settled face for a
-      // beat so the user can read the swing roll before the outcome
-      // and field view take over.
       setStage({ kind: "batter-settled", pitchRoll, advantage, swingRoll });
       setTimeout(() => {
         const outcome = getOutcome(pitcher, batter, advantage, swingRoll);
@@ -471,6 +585,33 @@ function Play({
   function nextBatter() {
     setStage({ kind: "idle" });
   }
+
+  // Auto-roll the pitch when the player is on offense and waiting for the
+  // CPU to throw. Cleanup clears the timeout if the stage changes first.
+  useEffect(() => {
+    if (stage.kind !== "idle") return;
+    if (playerSide === null) return;
+    if (fieldingSide === playerSide) return;
+    const t = setTimeout(() => tapPitcher(), AUTO_PAUSE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage.kind, fieldingSide, playerSide]);
+
+  // Auto-swing when the player is on defense and the CPU batter is up.
+  useEffect(() => {
+    if (stage.kind !== "pitcher-settled") return;
+    if (playerSide === null) return;
+    if (battingSide === playerSide) return;
+    const t = setTimeout(() => tapBatter(), AUTO_PAUSE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage.kind, battingSide, playerSide]);
+
+  // Single-card layout: while the pitcher is winding up we show the
+  // pitcher card; once advantage is decided we swap to the batter card
+  // for the swing.
+  const showingPitcher =
+    stage.kind === "idle" || stage.kind === "pitcher-rolling";
 
   const pitchValue =
     stage.kind === "idle"
@@ -506,32 +647,33 @@ function Play({
         ? batter.name
         : null;
 
-  const isLocked =
-    stage.kind === "pitcher-rolling" ||
-    stage.kind === "batter-rolling" ||
-    stage.kind === "batter-settled";
-
   return (
-    <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-3 sm:px-6 sm:py-4">
-      <header className="shrink-0 mb-2 flex items-center gap-3">
-        <button
-          onClick={() => onEnd(game)}
-          className="text-xs text-zinc-500 hover:text-zinc-200"
-        >
-          End
-        </button>
-        <div className="flex-1 min-w-0">
-          <Scoreboard state={game} />
-        </div>
-        {stage.kind === "idle" && (
+    <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-2 sm:px-6 sm:py-3">
+      {/* Two-row header keeps everything legible on narrow screens.
+          Row 1: leave/sub controls. Row 2: scoreboard + bases. */}
+      <header className="shrink-0 mb-2">
+        <div className="flex items-center justify-between mb-1.5">
           <button
-            onClick={() => setManageOpen(true)}
-            className="rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+            onClick={() => onEnd(game)}
+            className="rounded-full border border-zinc-800 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400 hover:border-zinc-600 hover:text-zinc-100"
           >
-            Sub
+            End
           </button>
-        )}
-        {stage.kind !== "field" && <BaseDiamond bases={game.bases} />}
+          {stage.kind === "idle" && (
+            <button
+              onClick={() => setManageOpen(true)}
+              className="rounded-full border border-zinc-700 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+            >
+              Sub
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <Scoreboard state={game} />
+          </div>
+          {stage.kind !== "field" && <BaseDiamond bases={game.bases} />}
+        </div>
       </header>
 
       <ManageModal
@@ -558,119 +700,194 @@ function Play({
           onPlayAgain={() => onEnd(game)}
         />
       ) : (
-        <>
-          <div className="flex-1 min-h-0 grid grid-cols-2 gap-3 sm:gap-6">
-            <CardSlot
-              label={`P · ${pitcher.name}${fatigue > 0 ? ` (−${fatigue})` : ""}`}
-              card={pitcher}
-              disabled={isLocked}
-              active={stage.kind === "idle" || stage.kind === "pitcher-rolling"}
-              warning={fatigue > 0}
-            />
-            <CardSlot
-              label={`#${currentBatterSlot(game) + 1} · ${batter.name}`}
-              card={batter}
-              disabled={isLocked}
-              active={
-                stage.kind === "pitcher-settled" ||
-                stage.kind === "batter-rolling" ||
-                stage.kind === "batter-settled"
-              }
-            />
-          </div>
-          <div className="shrink-0 mt-3 flex items-center justify-around gap-3">
-            <Dice
-              tone="pitcher"
-              status={pitchStatus}
-              value={pitchValue}
-              label={`+${pitcher.control}`}
-              onTap={stage.kind === "idle" ? tapPitcher : undefined}
-            />
-            <Center
-              stage={stage}
-              pitcher={pitcher}
-              batter={batter}
-              advantageHolder={advantageHolder}
-              fatigue={fatigue}
-            />
-            <Dice
-              tone="batter"
-              status={swingStatus}
-              value={swingValue}
-              label={`OB ${batter.onBase}`}
-              onTap={stage.kind === "pitcher-settled" ? tapBatter : undefined}
-            />
-          </div>
-        </>
+        <SinglePlayLayout
+          showingPitcher={showingPitcher}
+          pitcher={pitcher}
+          batter={batter}
+          batterSlot={currentBatterSlot(game)}
+          fatigue={fatigue}
+          stage={stage}
+          pitchValue={pitchValue}
+          pitchStatus={pitchStatus}
+          swingValue={swingValue}
+          swingStatus={swingStatus}
+          advantageHolder={advantageHolder}
+          playerCanPitch={playerCanPitch}
+          playerCanSwing={playerCanSwing}
+          isOpponentActing={
+            playerSide !== null &&
+            ((stage.kind === "idle" && fieldingSide !== playerSide) ||
+              (stage.kind === "pitcher-settled" &&
+                battingSide !== playerSide))
+          }
+          onTapPitch={tapPitcher}
+          onTapSwing={tapBatter}
+        />
       )}
     </main>
   );
 }
 
-function currentBatterSlot(g: GameState): number {
-  return g.half === "top" ? g.away.battingIndex : g.home.battingIndex;
-}
-
-function CardSlot({
-  label,
-  card,
-  disabled,
-  active,
-  warning,
+// Single-card playing layout. The card and the active die swap depending
+// on what stage of the at-bat we're in, keeping mobile from getting
+// crammed and giving each beat (pitch / swing) its own focused moment.
+function SinglePlayLayout({
+  showingPitcher,
+  pitcher,
+  batter,
+  batterSlot,
+  fatigue,
+  stage,
+  pitchValue,
+  pitchStatus,
+  swingValue,
+  swingStatus,
+  advantageHolder,
+  playerCanPitch,
+  playerCanSwing,
+  isOpponentActing,
+  onTapPitch,
+  onTapSwing,
 }: {
-  label: string;
-  card: CardType;
-  disabled?: boolean;
-  active?: boolean;
-  warning?: boolean;
+  showingPitcher: boolean;
+  pitcher: PitcherCard;
+  batter: BatterCard;
+  batterSlot: number;
+  fatigue: number;
+  stage: Stage;
+  pitchValue: number | null;
+  pitchStatus: "idle" | "rolling" | "settled";
+  swingValue: number | null;
+  swingStatus: "idle" | "rolling" | "settled";
+  advantageHolder: string | null;
+  playerCanPitch: boolean;
+  playerCanSwing: boolean;
+  isOpponentActing: boolean;
+  onTapPitch: () => void;
+  onTapSwing: () => void;
 }) {
+  const cardLabel = showingPitcher
+    ? `P · ${pitcher.name}${fatigue > 0 ? ` (−${fatigue})` : ""}`
+    : `#${batterSlot + 1} · ${batter.name}`;
+  const contextLine = showingPitcher
+    ? `Up: #${batterSlot + 1} ${batter.name} · OB ${batter.onBase}`
+    : `vs ${pitcher.name} · Ctrl ${pitcher.control}${
+        fatigue > 0 ? ` (−${fatigue})` : ""
+      }`;
+
   return (
-    <div className="flex flex-col min-h-0">
+    <div className="flex-1 min-h-0 flex flex-col">
       <div
-        className={`shrink-0 truncate text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 ${
-          disabled
-            ? "text-zinc-600"
-            : warning
-              ? "text-amber-400"
-              : active
-                ? "text-emerald-300"
-                : "text-zinc-500"
+        className={`shrink-0 truncate text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 text-center ${
+          fatigue > 0 && showingPitcher ? "text-amber-400" : "text-emerald-300"
         }`}
       >
-        {label}
+        {cardLabel}
       </div>
-      <div className="flex-1 min-h-0 flex items-start justify-center">
-        <Image
-          src={`/cards/${card.id}.png`}
-          alt={card.name}
-          width={1488}
-          height={2079}
-          className={`block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 transition-shadow ${
-            active ? "ring-4 ring-emerald-400/60" : ""
-          }`}
-          sizes="50vw"
-          priority
-        />
+
+      <div className="flex-1 min-h-0 flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          {showingPitcher ? (
+            <motion.div
+              key={`pitcher-${pitcher.id}`}
+              initial={{ opacity: 0, x: -16, scale: 0.94 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -16, scale: 0.94 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="h-full flex items-center justify-center"
+            >
+              <Image
+                src={`/cards/${pitcher.id}.png`}
+                alt={pitcher.name}
+                width={1488}
+                height={2079}
+                className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4 ring-rose-400/40"
+                sizes="90vw"
+                priority
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key={`batter-${batter.id}`}
+              initial={{ opacity: 0, x: 16, scale: 0.94 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 16, scale: 0.94 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="h-full flex items-center justify-center"
+            >
+              <Image
+                src={`/cards/${batter.id}.png`}
+                alt={batter.name}
+                width={1488}
+                height={2079}
+                className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4 ring-sky-400/40"
+                sizes="90vw"
+                priority
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="shrink-0 mt-2 text-center text-[10px] sm:text-xs text-zinc-500 truncate">
+        {contextLine}
+      </div>
+
+      <StatusLine
+        stage={stage}
+        pitcher={pitcher}
+        batter={batter}
+        fatigue={fatigue}
+        advantageHolder={advantageHolder}
+        playerCanPitch={playerCanPitch}
+        playerCanSwing={playerCanSwing}
+        isOpponentActing={isOpponentActing}
+      />
+
+      <div className="shrink-0 mt-2 flex items-center justify-center">
+        {showingPitcher ? (
+          <Dice
+            tone="pitcher"
+            status={pitchStatus}
+            value={pitchValue}
+            label={`+${pitcher.control}`}
+            onTap={playerCanPitch ? onTapPitch : undefined}
+          />
+        ) : (
+          <Dice
+            tone="batter"
+            status={swingStatus}
+            value={swingValue}
+            label={`OB ${batter.onBase}`}
+            onTap={playerCanSwing ? onTapSwing : undefined}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function Center({
+function StatusLine({
   stage,
   pitcher,
   batter,
-  advantageHolder,
   fatigue,
+  advantageHolder,
+  playerCanPitch,
+  playerCanSwing,
+  isOpponentActing,
 }: {
   stage: Stage;
   pitcher: PitcherCard;
   batter: BatterCard;
-  advantageHolder: string | null;
   fatigue: number;
+  advantageHolder: string | null;
+  playerCanPitch: boolean;
+  playerCanSwing: boolean;
+  isOpponentActing: boolean;
 }) {
   return (
-    <div className="flex-1 min-w-0 text-center">
+    <div className="shrink-0 mt-2 h-12 flex flex-col items-center justify-center text-center">
       <AnimatePresence mode="wait">
         {stage.kind === "idle" && (
           <motion.div
@@ -678,9 +895,13 @@ function Center({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-xs sm:text-sm text-zinc-500"
+            className="text-xs sm:text-sm text-zinc-400"
           >
-            Tap the red die to pitch
+            {playerCanPitch
+              ? "Tap the red die to pitch"
+              : isOpponentActing
+                ? "Opponent winding up…"
+                : "—"}
           </motion.div>
         )}
         {stage.kind === "pitcher-rolling" && (
@@ -694,7 +915,8 @@ function Center({
             …
           </motion.div>
         )}
-        {(stage.kind === "pitcher-settled" || stage.kind === "batter-settled") && (
+        {(stage.kind === "pitcher-settled" ||
+          stage.kind === "batter-settled") && (
           <motion.div
             key="settled"
             initial={{ opacity: 0, y: 4 }}
@@ -702,29 +924,40 @@ function Center({
             exit={{ opacity: 0, y: -4 }}
             className="space-y-0.5"
           >
-            <div className="text-[10px] sm:text-xs text-zinc-500">
-              {stage.pitchRoll}+{pitcher.control}
-              {fatigue > 0 && <span className="text-amber-400">−{fatigue}</span>}
-              ={stage.pitchRoll + pitcher.control - fatigue} vs OB {batter.onBase}
-            </div>
-            <div className="text-sm font-semibold">
+            <div className="text-sm font-bold">
               <span
                 className={
-                  stage.advantage === "pitcher" ? "text-rose-400" : "text-sky-400"
+                  stage.advantage === "pitcher"
+                    ? "text-rose-400"
+                    : "text-sky-400"
                 }
               >
                 {advantageHolder}
               </span>{" "}
               <span className="text-zinc-400">advantage</span>
             </div>
-            {stage.kind === "pitcher-settled" && (
-              <div className="text-[10px] text-zinc-500">Tap the blue die to swing</div>
-            )}
-            {stage.kind === "batter-settled" && (
-              <div className="text-[10px] text-zinc-500">
-                Swing {stage.swingRoll} on {stage.advantage === "pitcher" ? "pitcher" : "batter"} chart…
-              </div>
-            )}
+            <div className="text-[10px] text-zinc-500">
+              {stage.pitchRoll}+{pitcher.control}
+              {fatigue > 0 && <span className="text-amber-400">−{fatigue}</span>}
+              ={stage.pitchRoll + pitcher.control - fatigue} vs OB{" "}
+              {batter.onBase}
+              {stage.kind === "pitcher-settled" && (
+                <>
+                  {" · "}
+                  {playerCanSwing ? "Tap blue die to swing" : "Opponent swings…"}
+                </>
+              )}
+              {stage.kind === "batter-settled" && (
+                <>
+                  {" · Swing "}
+                  <span className="font-bold text-zinc-200">
+                    {stage.swingRoll}
+                  </span>{" "}
+                  on{" "}
+                  {stage.advantage === "pitcher" ? "pitcher" : "batter"} chart…
+                </>
+              )}
+            </div>
           </motion.div>
         )}
         {stage.kind === "batter-rolling" && (
@@ -741,6 +974,10 @@ function Center({
       </AnimatePresence>
     </div>
   );
+}
+
+function currentBatterSlot(g: GameState): number {
+  return g.half === "top" ? g.away.battingIndex : g.home.battingIndex;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -917,7 +1154,7 @@ function GameOverPanel({
       </div>
       <div
         className="text-lg sm:text-xl font-bold tracking-tight"
-        style={{ color: winningTeam.colors.primary }}
+        style={{ color: getTeamDisplayColor(winningTeam) }}
       >
         {winningTeam.name} win
       </div>
@@ -943,10 +1180,11 @@ function FinalScore({
   team: GameState["away"];
   winning: boolean;
 }) {
+  const color = getTeamDisplayColor(team.team);
   return (
     <span
       className={`flex items-baseline gap-1.5 ${winning ? "" : "opacity-60"}`}
-      style={{ color: winning ? team.team.colors.primary : undefined }}
+      style={{ color: winning ? color : undefined }}
     >
       <span className="text-sm font-semibold">{team.team.shortName}</span>
       <span className="text-xl sm:text-2xl font-bold tabular-nums">
