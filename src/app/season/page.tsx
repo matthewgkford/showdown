@@ -99,21 +99,37 @@ export default function SeasonPage() {
           </div>
         )}
 
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          {team && (
+            <Link
+              href={`/team/${team.slug}`}
+              className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
+            >
+              View my roster →
+            </Link>
+          )}
+          <Link
+            href="/standings"
+            className="rounded-full border border-zinc-700 px-5 py-2 text-sm text-zinc-300 hover:border-zinc-500"
+          >
+            Standings
+          </Link>
+          <Link
+            href="/game"
+            className="rounded-full border border-zinc-700 px-5 py-2 text-sm text-zinc-300 hover:border-zinc-500"
+          >
+            Exhibition
+          </Link>
+        </div>
+
         <section className="mt-8 rounded-xl border border-dashed border-zinc-800 p-6 text-center">
           <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-zinc-600">
             Coming in stage 4
           </div>
           <p className="mt-2 text-sm text-zinc-400">
-            Schedule, standings, next-game CTA, and pack rewards land in
-            Stage 4. For now you can play exhibition games against the other
-            nine teams.
+            Schedule, division standings, next-game CTA, and pack rewards
+            land in Stage 4.
           </p>
-          <Link
-            href="/game"
-            className="inline-block mt-4 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
-          >
-            Play exhibition →
-          </Link>
         </section>
 
         <section className="mt-6 flex justify-center">

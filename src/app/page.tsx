@@ -35,6 +35,12 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
+              href="/standings"
+              className="rounded-full border border-zinc-700 px-3 py-2 text-xs sm:text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+            >
+              Standings
+            </Link>
+            <Link
               href="/collection"
               className="rounded-full border border-zinc-700 px-3 py-2 text-xs sm:text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
             >
@@ -45,12 +51,6 @@ export default function Home() {
               className="rounded-full border border-zinc-700 px-3 py-2 text-xs sm:text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
             >
               Packs
-            </Link>
-            <Link
-              href="/at-bat"
-              className="rounded-full border border-zinc-700 px-3 py-2 text-xs sm:text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
-            >
-              At-bat
             </Link>
             <Link
               href="/game"

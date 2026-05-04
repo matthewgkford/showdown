@@ -102,3 +102,73 @@ To tune later: edit `POINTS_BANDS` in `lib/rarity.ts`. Nothing else needs to cha
 The sort lives in `lib/rarity.ts` (`sortForReveal`); pack JSON can list cards in any order.
 
 ---
+
+## 2026-05-04: 13-card rosters, 9 batters + 1 SP + 3 RP (Phase 8)
+
+**Decision**: Every team's roster is exactly 13 cards: 9 batters in batting-order positions 1–9, 1 starting pitcher, 3 relievers.
+
+**Reasoning**: Matches real-baseball lineup conventions and gives meaningful in-game decisions (lineup order, pitching changes mid-game) without a deep bench that overwhelms v1 UX. 9 batters fills the lineup with no DH-or-9 ambiguity. 1 SP keeps the starting-pitcher role single — fatigue logic still flips a switch when IP is exceeded. 3 RP gives a proper bullpen for the Phase 6 substitution UI without forcing us to find 50+ true relievers in the card pool.
+
+---
+
+## 2026-05-04: 18-game schedule, home-and-away round robin (Phase 8)
+
+**Decision**: A season is exactly 18 games. Each team plays every other team in the league once at home and once away — no playoffs, no extras. Win the division, get promoted.
+
+**Reasoning**: With 10 teams in 2 divisions, full home-and-away round-robin = 9 opponents × 2 = 18 games. That's a comfortable phone-session length over a couple of evenings, gives every matchup happens both at home and away (so Bagels-vs-Pepperoni feels rivalrous in both flavours), and keeps the win/pack reward loop tight without dragging. Playoffs would add UI surface and balance work without changing the season's emotional arc; the simpler "win your division" gating is enough for v1.
+
+---
+
+## 2026-05-04: Static-within-tier opponent rosters (Phase 8)
+
+**Decision**: Opponent rosters are hand-defined in `data/rosters.json` and do not change during a season. They jump in difficulty between league tiers (via `powerLevel`) but never improve mid-season.
+
+**Reasoning**: Player builds power; opponents stand still. That's the entire shape of the progression loop — every pack the player wins is a meaningful gain because the goalposts don't move. If opponents auto-improved week-to-week we'd be balancing two moving targets, which is harder to tune and harder for the player to feel progress against. Tiered jumps preserve the "you outgrew this league" celebration moment.
+
+---
+
+## 2026-05-04: League tier architecture + powerLevel multiplier (Phase 8)
+
+**Decision**: The league ladder is defined in `data/leagues.json` as tiered entries (`tier: number`, `powerLevel: number`). v1 only ships `tier: 1` (Single-A, powerLevel 1.0) as playable; `tier: 2` (Double-A, powerLevel 1.4) is a stub. Promotion = win-division. The same `data/rosters.json` is reused across tiers — at tier N, opponent rosters are passed through `applyPowerLevel(card, league.powerLevel)` which scales batter `onBase` and pitcher `control` by the multiplier.
+
+**Reasoning**: Maintaining 10 separate rosters per tier × N tiers gets unmaintainable fast. With a multiplier, one set of hand-picked rosters serves every tier — the same Bagels lineup gets harder as you climb. Chart values stay 1–20 (they're d20 ranges by definition); only the advantage probability shifts.
+
+The player's own roster is **never** passed through `applyPowerLevel`. Players gain power by collecting better cards from packs, not by auto-scaling. This keeps the progression loop honest: a Single-A roster that wins the division should feel meaningfully under-equipped vs. raw Double-A opponents until the player upgrades it.
+
+---
+
+## 2026-05-04: Reliever-shortage v1 expedient (Phase 8)
+
+**Decision**: When the card pool has fewer "true" relievers/closers than the league needs (currently 18 vs. 30 slots across 10 teams), starter-type pitchers may fill bullpen slots. The card data does not change — it stays a starter with starter-shaped IP/stats; it's just slotted as a reliever for that team.
+
+**Reasoning**: The Phase 6 fatigue/inning-eligibility engine reads from card stats (`pitcher.ip`, `pitcher.pitcherType`), not roster slot. A starter slotted into the bullpen retains its IP value, which means it's unusually durable as a reliever — but functionally correct. Accepted for v1; will tighten when the card pool has 30+ true relievers.
+
+Documented loudly so reviewers understand why a 540-pt starter might appear in a team's bullpen.
+
+---
+
+## 2026-05-04: Pack reward formula — 4 cards, 1 rare/legendary + 3 commons (Phase 8)
+
+**Decision**: Winning a season game generates a custom 4-card pack on the fly: 1 guaranteed rare-or-legendary "good card" plus 3 commons. Lose a game, no pack. Pack quality scales with the league tier (Single-A is the entry pool; higher tiers will pull from stronger pools).
+
+**Reasoning**: The "1 good card" guarantee is the dopamine — every win produces a tangible reward worth opening. The 3 commons add bulk so the pack-opening Phase 7 reveal sequence still has rhythm (commons first, climax last). Loss = no pack keeps wins meaningful; we don't want to incentivise farming losses.
+
+The "good card" is sourced from a reward pool defined as cards not already in any starter roster, OR cards stronger than the player's weakest current card — heuristic: top ~30% of available cards but not always the absolute best. Tunable per tier.
+
+---
+
+## 2026-05-04: Win-division → promotion (stub for v1) (Phase 8)
+
+**Decision**: Promotion to the next league tier is triggered by winning your division at season end. v1 ships only Single-A as playable; promotion lands on a "coming soon" celebration screen and offers replay of the same league with the player's existing roster.
+
+**Reasoning**: Winning the division is the cleanest, easiest-to-grasp promotion criterion — no playoff brackets, no top-N finishes to explain. The stub exists so the celebratory moment is preserved even though the next tier's content is v1+. Roster persists across the stub so when Double-A actually exists, the player walks in with the team they built.
+
+---
+
+## 2026-05-04: Season state in localStorage (Phase 8)
+
+**Decision**: Season state lives in `localStorage` under `showdown:season` and includes `playerTeamSlug`, `currentLeagueTier`, `startedAt` (Stage 2). Stage 4 will extend with `schedule`, `completedGames`, and `careerHistory`. Same migration path as collection/packs — replace `safeLoad`/`safeSave` with authenticated fetches when a backend exists.
+
+**Reasoning**: One unified persistence story across Phase 7 (collection, packs) and Phase 8 (season). All accessors go through `lib/season.ts`, so a future backend swap touches one file.
+
+---

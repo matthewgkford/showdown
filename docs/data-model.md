@@ -313,3 +313,119 @@ All accessors are SSR-safe (`typeof window === "undefined"` guards) and live in 
 ### Migration to a backend later
 
 When v2 needs cross-device sync, replace the `safeLoad` / `safeSave` helpers in `lib/collection.ts` with authenticated fetch calls to a backend that exposes the same shapes. Nothing else in the app reads localStorage directly; every consumer goes through these accessors. Persisting both keys server-side is the entire migration.
+
+---
+
+## Teams, divisions, leagues (Phase 8)
+
+The 10-team league replaces the Phase 5 placeholder Red Boys / Blue Boys.
+
+### Team
+
+```typescript
+type TeamColors = { primary: string; accent: string; light: string };
+type TeamLogos = { primary: string };
+
+type Team = {
+  slug: string;            // url-safe id, also the directory name under public/logos/
+  name: string;
+  shortName: string;       // 3-letter scoreboard code
+  divisionSlug: string;
+  colors: TeamColors;
+  logos: TeamLogos;
+  flavor: string;          // 1-2 sentences shown on the choose-team modal
+  stadium: string | null;  // populate in a later phase
+};
+```
+
+Lives in `data/teams.json`. Helpers in `lib/teams.ts`.
+
+### Division
+
+```typescript
+type Division = {
+  slug: string;
+  name: string;
+  teamSlugs: string[];
+};
+```
+
+`data/divisions.json` — Turnpike (Bagels, Pepperoni Slices, Skylinders, Lincoln Tunnellers, Parkways) and Garden State (Mischief Nighters, Diner Rats, Boardwalk Bandits, Rippers, Meadowlands).
+
+### League (tier)
+
+```typescript
+type League = {
+  tier: number;
+  id: string;
+  name: string;
+  displayName: string;
+  powerLevel: number;
+  promotionRequirement: "win-division";
+  stub?: boolean;
+};
+```
+
+`data/leagues.json` — tier 1 = Single-A (powerLevel 1.0, playable), tier 2 = Double-A (powerLevel 1.4, stub).
+
+## Rosters (Phase 8)
+
+Every team has a fixed 13-card roster.
+
+```typescript
+type Roster = {
+  teamSlug: string;
+  batters: string[];        // exactly 9 card ids in batting order positions 1-9
+  startingPitcher: string;  // single card id
+  relievers: string[];      // exactly 3 card ids
+};
+```
+
+`data/rosters.json` — 10 entries, one per team. Distributed via LPT-balanced
+allocation + swap optimisation so total points are within 0.8% across teams.
+Cards are not duplicated across rosters.
+
+### Effective rosters and powerLevel scaling
+
+```typescript
+type EffectiveRoster = {
+  teamSlug: string;
+  batters: BatterCard[];
+  startingPitcher: PitcherCard;
+  relievers: PitcherCard[];
+};
+```
+
+Returned by `getEffectiveRoster(slug, leagueTier)` — the cards are resolved
+and (if leagueTier > 1) scaled by `applyPowerLevel`. Used by the season game
+flow when constructing both lineups for a matchup.
+
+**Critical rule:** When the player's team plays a season game, only the
+opponent roster is fetched with the current league tier. The player's own
+roster is fetched with `tier = 1` (or whatever its base tier is) — players
+gain power by collecting better cards, not by auto-scaling.
+
+## Season state (Phase 8)
+
+Stored in `localStorage` under `showdown:season`:
+
+```typescript
+// Stage 2 shape — Stage 4 will extend.
+type SeasonState = {
+  playerTeamSlug: string;
+  currentLeagueTier: number;
+  startedAt: string;  // ISO timestamp
+};
+```
+
+Helpers in `lib/season.ts` — same `useSyncExternalStore` subscribe-snapshot
+pattern as `lib/collection.ts`. Migration to a backend swaps the
+`safeLoad` / `safeSave` helpers.
+
+### Roster–collection relationship
+
+The player's roster is a *view into* their collection — not a separate
+inventory. Cards aren't "consumed" when slotted in the roster. Once Stage 6
+ships the roster-edit UI, swapping a card OUT of the roster returns it to
+the collection display; swapping a card IN keeps it in both the roster and
+the collection. There is no separate "roster ownership" key in storage.
