@@ -1,16 +1,92 @@
 [
   {
-    "id": "red-boys",
-    "name": "Red Boys",
-    "shortName": "RED",
-    "color": "#dc2626",
-    "logoUrl": "/teams/red-boys.png"
+    "slug": "bagels",
+    "name": "Bagels",
+    "shortName": "BAG",
+    "divisionSlug": "turnpike",
+    "colors": { "primary": "#1F2A44", "accent": "#C9A878", "light": "#F5EDD8" },
+    "logos": { "primary": "/logos/bagels/primary.png" },
+    "stadium": null
   },
   {
-    "id": "blue-boys",
-    "name": "Blue Boys",
-    "shortName": "BLU",
-    "color": "#2563eb",
-    "logoUrl": "/teams/blue-boys.png"
+    "slug": "pepperoni-slices",
+    "name": "Pepperoni Slices",
+    "shortName": "PEP",
+    "divisionSlug": "turnpike",
+    "colors": { "primary": "#1E3035", "accent": "#7A2A2A", "light": "#D4B47C" },
+    "logos": { "primary": "/logos/pepperoni-slices/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "skylinders",
+    "name": "Skylinders",
+    "shortName": "SKY",
+    "divisionSlug": "turnpike",
+    "colors": { "primary": "#1A1F2E", "accent": "#E8B547", "light": "#F2EAD6" },
+    "logos": { "primary": "/logos/skylinders/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "lincoln-tunnellers",
+    "name": "Lincoln Tunnellers",
+    "shortName": "TUN",
+    "divisionSlug": "turnpike",
+    "colors": { "primary": "#1A1815", "accent": "#D67D2C", "light": "#EFE4C8" },
+    "logos": { "primary": "/logos/lincoln-tunnellers/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "parkways",
+    "name": "Parkways",
+    "shortName": "PKY",
+    "divisionSlug": "turnpike",
+    "colors": { "primary": "#0E5D3A", "accent": "#F2C94C", "light": "#F4F1E4" },
+    "logos": { "primary": "/logos/parkways/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "mischief-nighters",
+    "name": "Mischief Nighters",
+    "shortName": "MIS",
+    "divisionSlug": "garden-state",
+    "colors": { "primary": "#3D2B5E", "accent": "#E8893E", "light": "#F5EDD8" },
+    "logos": { "primary": "/logos/mischief-nighters/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "diner-rats",
+    "name": "Diner Rats",
+    "shortName": "RAT",
+    "divisionSlug": "garden-state",
+    "colors": { "primary": "#1A1A1A", "accent": "#FF2E63", "light": "#FBF4E4" },
+    "logos": { "primary": "/logos/diner-rats/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "boardwalk-bandits",
+    "name": "Boardwalk Bandits",
+    "shortName": "BWK",
+    "divisionSlug": "garden-state",
+    "colors": { "primary": "#3E7C8B", "accent": "#D85A4A", "light": "#F5EBD6" },
+    "logos": { "primary": "/logos/boardwalk-bandits/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "rippers",
+    "name": "Rippers",
+    "shortName": "RIP",
+    "divisionSlug": "garden-state",
+    "colors": { "primary": "#1A1A1A", "accent": "#E8B23B", "light": "#F2E8D0" },
+    "logos": { "primary": "/logos/rippers/primary.png" },
+    "stadium": null
+  },
+  {
+    "slug": "meadowlands",
+    "name": "Meadowlands",
+    "shortName": "MDL",
+    "divisionSlug": "garden-state",
+    "colors": { "primary": "#1C1C1C", "accent": "#3C5A5E", "light": "#EDE6D6" },
+    "logos": { "primary": "/logos/meadowlands/primary.png" },
+    "stadium": null
   }
 ]

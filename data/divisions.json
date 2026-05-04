@@ -1,0 +1,24 @@
+[
+  {
+    "slug": "turnpike",
+    "name": "Turnpike Division",
+    "teamSlugs": [
+      "bagels",
+      "pepperoni-slices",
+      "skylinders",
+      "lincoln-tunnellers",
+      "parkways"
+    ]
+  },
+  {
+    "slug": "garden-state",
+    "name": "Garden State Division",
+    "teamSlugs": [
+      "mischief-nighters",
+      "diner-rats",
+      "boardwalk-bandits",
+      "rippers",
+      "meadowlands"
+    ]
+  }
+]

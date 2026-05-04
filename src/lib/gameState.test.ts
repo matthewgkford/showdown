@@ -15,18 +15,22 @@ import {
 } from "./gameState";
 
 const awayTeam: Team = {
-  id: "away",
+  slug: "away",
   name: "Away",
   shortName: "AWY",
-  color: "#888",
-  logoUrl: "/teams/away.png",
+  divisionSlug: "test",
+  colors: { primary: "#888", accent: "#aaa", light: "#ccc" },
+  logos: { primary: "/logos/away/primary.png" },
+  stadium: null,
 };
 const homeTeam: Team = {
-  id: "home",
+  slug: "home",
   name: "Home",
   shortName: "HME",
-  color: "#888",
-  logoUrl: "/teams/home.png",
+  divisionSlug: "test",
+  colors: { primary: "#888", accent: "#aaa", light: "#ccc" },
+  logos: { primary: "/logos/home/primary.png" },
+  stadium: null,
 };
 
 // Synthetic cards — we don't care about the chart values here, only that

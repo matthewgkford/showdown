@@ -115,18 +115,23 @@ function Setup({
 }: {
   onStart: (away: Team, home: Team) => void;
 }) {
-  const [awayId, setAwayId] = useState<string>(teams[0].id);
-  const homeTeam = teams.find((t) => t.id !== awayId) ?? teams[1];
-  const awayTeam = teams.find((t) => t.id === awayId) ?? teams[0];
+  const [awaySlug, setAwaySlug] = useState<string>(teams[0].slug);
+  const [homeSlug, setHomeSlug] = useState<string>(teams[1].slug);
+  const awayTeam = teams.find((t) => t.slug === awaySlug) ?? teams[0];
+  const homeTeam = teams.find((t) => t.slug === homeSlug) ?? teams[1];
+  const sameTeam = awaySlug === homeSlug;
 
   function swap() {
-    setAwayId(homeTeam.id);
+    setAwaySlug(homeSlug);
+    setHomeSlug(awaySlug);
   }
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 px-4 py-6 sm:px-8">
       <header className="mb-6 flex items-baseline justify-between gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">New game</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          Exhibition
+        </h1>
         <Link href="/" className="text-xs text-zinc-400 hover:text-zinc-200">
           ← library
         </Link>
@@ -134,8 +139,18 @@ function Setup({
 
       <div className="flex-1 flex flex-col items-center justify-center gap-6">
         <div className="grid grid-cols-2 gap-4 sm:gap-12 items-center">
-          <TeamCard team={awayTeam} role="Away" />
-          <TeamCard team={homeTeam} role="Home" />
+          <TeamPicker
+            role="Away"
+            value={awaySlug}
+            onChange={setAwaySlug}
+            team={awayTeam}
+          />
+          <TeamPicker
+            role="Home"
+            value={homeSlug}
+            onChange={setHomeSlug}
+            team={homeTeam}
+          />
         </div>
 
         <button
@@ -146,34 +161,44 @@ function Setup({
         </button>
 
         <p className="text-xs text-zinc-500 max-w-xs text-center">
-          Rosters are randomized at game start — 9 batters and 1 pitcher per
-          team, no overlap between teams.
+          Exhibition mode — rosters are randomized at game start. Pick any
+          two of the ten teams.
         </p>
 
         <button
           onClick={() => onStart(awayTeam, homeTeam)}
-          className="rounded-full bg-emerald-500 px-10 py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-emerald-400 active:bg-emerald-600"
+          disabled={sameTeam}
+          className="rounded-full bg-emerald-500 px-10 py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-emerald-400 active:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Play ball
+          {sameTeam ? "Pick two different teams" : "Play ball"}
         </button>
       </div>
     </main>
   );
 }
 
-function TeamCard({ team, role }: { team: Team; role: string }) {
+function TeamPicker({
+  role,
+  value,
+  onChange,
+  team,
+}: {
+  role: string;
+  value: string;
+  onChange: (slug: string) => void;
+  team: Team;
+}) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div
         className="flex h-32 w-32 sm:h-40 sm:w-40 items-center justify-center rounded-2xl bg-zinc-900/60 ring-2"
         style={{
-          // tint the ring with the team color
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ["--tw-ring-color" as any]: team.color,
+          ["--tw-ring-color" as any]: team.colors.primary,
         }}
       >
         <Image
-          src={team.logoUrl}
+          src={team.logos.primary}
           alt={team.name}
           width={320}
           height={320}
@@ -181,11 +206,19 @@ function TeamCard({ team, role }: { team: Team; role: string }) {
           priority
         />
       </div>
-      <div className="text-center">
-        <div className="text-base sm:text-lg font-bold" style={{ color: team.color }}>
-          {team.name}
-        </div>
-        <div className="text-[10px] uppercase tracking-wider text-zinc-500">{role}</div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 focus:border-emerald-500 focus:outline-none"
+      >
+        {teams.map((t) => (
+          <option key={t.slug} value={t.slug}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+      <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+        {role}
       </div>
     </div>
   );
@@ -714,7 +747,7 @@ function GameOverPanel({
       </div>
       <div
         className="text-lg sm:text-xl font-bold tracking-tight"
-        style={{ color: winningTeam.color }}
+        style={{ color: winningTeam.colors.primary }}
       >
         {winningTeam.name} win
       </div>
@@ -743,7 +776,7 @@ function FinalScore({
   return (
     <span
       className={`flex items-baseline gap-1.5 ${winning ? "" : "opacity-60"}`}
-      style={{ color: winning ? team.team.color : undefined }}
+      style={{ color: winning ? team.team.colors.primary : undefined }}
     >
       <span className="text-sm font-semibold">{team.team.shortName}</span>
       <span className="text-xl sm:text-2xl font-bold tabular-nums">
@@ -904,7 +937,7 @@ function ManageModal({
 
             <Section
               title={`Pitching · ${fielding.team.shortName}`}
-              color={fielding.team.color}
+              color={fielding.team.colors.primary}
             >
               <div className="text-[11px] text-zinc-400 mb-2">
                 On the mound:{" "}
@@ -939,7 +972,7 @@ function ManageModal({
 
             <Section
               title={`Pinch hit · ${batting.team.shortName}`}
-              color={batting.team.color}
+              color={batting.team.colors.primary}
             >
               <div className="text-[11px] text-zinc-400 mb-2">
                 Up next:{" "}

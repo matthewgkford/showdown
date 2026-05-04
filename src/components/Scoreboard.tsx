@@ -48,7 +48,7 @@ function TeamScore({
   const dot = (
     <span
       className="h-1.5 w-1.5 rounded-full"
-      style={{ backgroundColor: batting ? team.team.color : "transparent" }}
+      style={{ backgroundColor: batting ? team.team.colors.primary : "transparent" }}
       aria-hidden
     />
   );
@@ -57,7 +57,7 @@ function TeamScore({
       {!reverse && dot}
       <span
         className="font-semibold"
-        style={{ color: batting ? team.team.color : undefined }}
+        style={{ color: batting ? team.team.colors.primary : undefined }}
       >
         {team.team.shortName}
       </span>

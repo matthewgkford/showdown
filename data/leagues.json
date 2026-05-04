@@ -1,0 +1,19 @@
+[
+  {
+    "tier": 1,
+    "id": "single-a",
+    "name": "Single-A",
+    "displayName": "The Garden State League",
+    "powerLevel": 1.0,
+    "promotionRequirement": "win-division"
+  },
+  {
+    "tier": 2,
+    "id": "double-a",
+    "name": "Double-A",
+    "displayName": "Coming Soon",
+    "powerLevel": 1.4,
+    "promotionRequirement": "win-division",
+    "stub": true
+  }
+]

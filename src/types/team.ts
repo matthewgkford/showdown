@@ -1,7 +1,32 @@
+export type TeamColors = {
+  // Primary brand colour — uniform body, scoreboard tinting, hero
+  // backgrounds.
+  primary: string;
+  // Accent — secondary highlight, outlines, callouts.
+  accent: string;
+  // Light — pale tint used for cream/foreground elements (jersey
+  // pinstripes, foil treatment, etc.).
+  light: string;
+};
+
+export type TeamLogos = {
+  // Path under public/, e.g. "/logos/bagels/primary.png".
+  primary: string;
+  // Future: cap, wordmark variants — left out of v1.
+};
+
 export type Team = {
-  id: string;
-  name: string;       // e.g. "Red Boys"
-  shortName: string;  // e.g. "RED" — for the scoreboard
-  color: string;      // primary color (hex), used for scoreboard tinting
-  logoUrl: string;    // path under public/, e.g. "/teams/red-boys.png"
+  // URL-safe identifier, also the directory name under public/logos/.
+  // Used as the foreign key from rosters, schedules, divisions, etc.
+  slug: string;
+  // Display name on team pages and standings.
+  name: string;
+  // 3-letter scoreboard code (e.g. "BAG", "PEP").
+  shortName: string;
+  // Foreign key into divisions.json.
+  divisionSlug: string;
+  colors: TeamColors;
+  logos: TeamLogos;
+  // Stadium name. Null for v1 — populate in a later phase.
+  stadium: string | null;
 };
