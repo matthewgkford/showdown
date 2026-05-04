@@ -13,7 +13,9 @@ export type Bases = {
 export type TeamState = {
   team: Team;
   lineup: BatterCard[]; // 9 batters in order
+  bench: BatterCard[]; // available pinch hitters
   pitcher: PitcherCard;
+  bullpen: PitcherCard[]; // available relievers
   pitcherStartedInning: number; // inning the current pitcher entered the game
   battingIndex: number; // 0..lineup.length-1, who's up next
   runs: number;
@@ -30,10 +32,15 @@ export type GameState = {
 
 export const EMPTY_BASES: Bases = { first: null, second: null, third: null };
 
-export function startGame(
-  away: { team: Team; lineup: BatterCard[]; pitcher: PitcherCard },
-  home: { team: Team; lineup: BatterCard[]; pitcher: PitcherCard },
-): GameState {
+export type TeamSetup = {
+  team: Team;
+  lineup: BatterCard[];
+  bench: BatterCard[];
+  pitcher: PitcherCard;
+  bullpen: PitcherCard[];
+};
+
+export function startGame(away: TeamSetup, home: TeamSetup): GameState {
   return {
     inning: 1,
     half: "top",
@@ -192,6 +199,46 @@ function onBaseCount(
   third: BatterCard | null,
 ): number {
   return (first ? 1 : 0) + (second ? 1 : 0) + (third ? 1 : 0);
+}
+
+// Substitutions are one-way per the 2001 rules — once a player is removed
+// they don't come back. The new pitcher's clock starts at the current
+// inning so fatigue resets.
+export function changePitcher(
+  state: GameState,
+  side: "home" | "away",
+  newPitcherId: string,
+): GameState {
+  const team = state[side];
+  const next = team.bullpen.find((p) => p.id === newPitcherId);
+  if (!next) return state;
+  const updated: TeamState = {
+    ...team,
+    pitcher: next,
+    pitcherStartedInning: state.inning,
+    bullpen: team.bullpen.filter((p) => p.id !== newPitcherId),
+  };
+  return { ...state, [side]: updated };
+}
+
+// Pinch hitter takes the lineup slot of whoever's currently up; the
+// player they replaced is finished for the game.
+export function pinchHit(
+  state: GameState,
+  side: "home" | "away",
+  newBatterId: string,
+): GameState {
+  const team = state[side];
+  const next = team.bench.find((b) => b.id === newBatterId);
+  if (!next) return state;
+  const lineup = team.lineup.slice();
+  lineup[team.battingIndex] = next;
+  const updated: TeamState = {
+    ...team,
+    lineup,
+    bench: team.bench.filter((b) => b.id !== newBatterId),
+  };
+  return { ...state, [side]: updated };
 }
 
 export type GameOverResult = { winner: "home" | "away" };

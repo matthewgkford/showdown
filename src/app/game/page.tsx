@@ -21,10 +21,13 @@ import {
   type Bases,
   type GameState,
   applyAtBatOutcome,
+  battingTeam,
+  changePitcher,
   checkGameOver,
   currentBatter,
   currentPitcher,
   fieldingTeam,
+  pinchHit,
   pitcherFatigue,
   startGame,
 } from "@/lib/gameState";
@@ -46,17 +49,28 @@ function shuffle<T>(xs: T[]): T[] {
   return a;
 }
 
-// Pick 9 batters + 1 pitcher per team out of the full pool, no duplicates
-// across the two teams. With 21 batters and 8 pitchers there are leftovers.
+// Pick lineups + bench + bullpen for both teams. With the current pool
+// (21 batters, 8 pitchers) each team gets 9 starters + 1 bench batter +
+// 1 starting pitcher + 3 relievers, drawn without overlap.
 function randomLineups(): {
-  away: { lineup: BatterCard[]; pitcher: PitcherCard };
-  home: { lineup: BatterCard[]; pitcher: PitcherCard };
+  away: { lineup: BatterCard[]; bench: BatterCard[]; pitcher: PitcherCard; bullpen: PitcherCard[] };
+  home: { lineup: BatterCard[]; bench: BatterCard[]; pitcher: PitcherCard; bullpen: PitcherCard[] };
 } {
   const b = shuffle(allBatters);
   const p = shuffle(allPitchers);
   return {
-    away: { lineup: b.slice(0, 9), pitcher: p[0] },
-    home: { lineup: b.slice(9, 18), pitcher: p[1] ?? p[0] },
+    away: {
+      lineup: b.slice(0, 9),
+      bench: b.slice(9, 10),
+      pitcher: p[0],
+      bullpen: p.slice(2, 5),
+    },
+    home: {
+      lineup: b.slice(10, 19),
+      bench: b.slice(19, 20),
+      pitcher: p[1] ?? p[0],
+      bullpen: p.slice(5, 8),
+    },
   };
 }
 
@@ -215,6 +229,7 @@ function Play({
 }) {
   const [game, setGame] = useState<GameState>(initial);
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
+  const [manageOpen, setManageOpen] = useState(false);
 
   const pitcher = useMemo(() => currentPitcher(game), [game]);
   const batter = useMemo(() => currentBatter(game), [game]);
@@ -305,8 +320,30 @@ function Play({
         <div className="flex-1 min-w-0">
           <Scoreboard state={game} />
         </div>
+        {stage.kind === "idle" && (
+          <button
+            onClick={() => setManageOpen(true)}
+            className="rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+          >
+            Sub
+          </button>
+        )}
         {stage.kind !== "field" && <BaseDiamond bases={game.bases} />}
       </header>
+
+      <ManageModal
+        open={manageOpen}
+        game={game}
+        onClose={() => setManageOpen(false)}
+        onChangePitcher={(side, id) => {
+          setGame((g) => changePitcher(g, side, id));
+          setManageOpen(false);
+        }}
+        onPinchHit={(side, id) => {
+          setGame((g) => pinchHit(g, side, id));
+          setManageOpen(false);
+        }}
+      />
 
       {stage.kind === "field" ? (
         <FieldView
@@ -810,5 +847,169 @@ function RunnerCard({ card, pos }: { card: BatterCard; pos: BasePos }) {
         {card.name.split(" ").slice(-1)[0]}
       </div>
     </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manage modal: pitching change (fielding team) + pinch hit (batting team)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ManageModal({
+  open,
+  game,
+  onClose,
+  onChangePitcher,
+  onPinchHit,
+}: {
+  open: boolean;
+  game: GameState;
+  onClose: () => void;
+  onChangePitcher: (side: "home" | "away", id: string) => void;
+  onPinchHit: (side: "home" | "away", id: string) => void;
+}) {
+  const fielding = fieldingTeam(game);
+  const fieldingSide: "home" | "away" = game.half === "top" ? "home" : "away";
+  const batting = battingTeam(game);
+  const battingSide: "home" | "away" = game.half === "top" ? "away" : "home";
+  const fatigue = pitcherFatigue(fielding, game.inning);
+  const currentBatterCard = batting.lineup[batting.battingIndex];
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 px-3"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5 max-h-[85vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider">Manage</h2>
+              <button
+                onClick={onClose}
+                className="text-xs text-zinc-500 hover:text-zinc-200"
+              >
+                Close
+              </button>
+            </div>
+
+            <Section
+              title={`Pitching · ${fielding.team.shortName}`}
+              color={fielding.team.color}
+            >
+              <div className="text-[11px] text-zinc-400 mb-2">
+                On the mound:{" "}
+                <span className="text-zinc-100 font-semibold">{fielding.pitcher.name}</span>{" "}
+                <span className="text-zinc-500">
+                  · Ctrl {fielding.pitcher.control} · IP {fielding.pitcher.ip}
+                </span>
+                {fatigue > 0 && (
+                  <span className="ml-1 text-amber-400">(−{fatigue})</span>
+                )}
+              </div>
+              {fielding.bullpen.length === 0 ? (
+                <div className="text-[11px] text-zinc-600 italic">
+                  No relievers available.
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {fielding.bullpen.map((p) => (
+                    <SubButton
+                      key={p.id}
+                      onClick={() => onChangePitcher(fieldingSide, p.id)}
+                    >
+                      <span className="font-semibold">{p.name}</span>
+                      <span className="text-zinc-500">
+                        Ctrl {p.control} · IP {p.ip}
+                      </span>
+                    </SubButton>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            <Section
+              title={`Pinch hit · ${batting.team.shortName}`}
+              color={batting.team.color}
+            >
+              <div className="text-[11px] text-zinc-400 mb-2">
+                Up next:{" "}
+                <span className="text-zinc-100 font-semibold">
+                  {currentBatterCard.name}
+                </span>{" "}
+                <span className="text-zinc-500">
+                  · OB {currentBatterCard.onBase}
+                </span>
+              </div>
+              {batting.bench.length === 0 ? (
+                <div className="text-[11px] text-zinc-600 italic">
+                  No bench batters available.
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {batting.bench.map((b) => (
+                    <SubButton
+                      key={b.id}
+                      onClick={() => onPinchHit(battingSide, b.id)}
+                    >
+                      <span className="font-semibold">{b.name}</span>
+                      <span className="text-zinc-500">OB {b.onBase}</span>
+                    </SubButton>
+                  ))}
+                </div>
+              )}
+            </Section>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function Section({
+  title,
+  color,
+  children,
+}: {
+  title: string;
+  color: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mb-4 last:mb-0">
+      <div
+        className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em]"
+        style={{ color }}
+      >
+        {title}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SubButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-xs hover:border-emerald-500/60 hover:bg-zinc-900 active:bg-zinc-800"
+    >
+      {children}
+    </button>
   );
 }

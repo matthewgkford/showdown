@@ -4,9 +4,11 @@ import type { Team } from "@/types/team";
 import {
   EMPTY_BASES,
   applyAtBatOutcome,
+  changePitcher,
   checkGameOver,
   currentBatter,
   currentPitcher,
+  pinchHit,
   pitcherFatigue,
   startGame,
   type GameState,
@@ -87,8 +89,20 @@ const homeLineup = Array.from({ length: 9 }, (_, i) => batter(`h${i}`));
 
 function freshGame(): GameState {
   return startGame(
-    { team: awayTeam, lineup: awayLineup, pitcher: fakePitcher },
-    { team: homeTeam, lineup: homeLineup, pitcher: fakePitcher },
+    {
+      team: awayTeam,
+      lineup: awayLineup,
+      bench: [],
+      pitcher: fakePitcher,
+      bullpen: [],
+    },
+    {
+      team: homeTeam,
+      lineup: homeLineup,
+      bench: [],
+      pitcher: fakePitcher,
+      bullpen: [],
+    },
   );
 }
 
@@ -427,6 +441,60 @@ describe("checkGameOver", () => {
       away: { ...freshGame().away, runs: 3 },
     };
     expect(checkGameOver(g)).toEqual({ winner: "home" });
+  });
+});
+
+describe("changePitcher", () => {
+  function reliever(id: string, ip = 4): PitcherCard {
+    return { ...fakePitcher, id, name: id, ip };
+  }
+
+  it("swaps the pitcher in, sets the start-inning to current, removes from bullpen", () => {
+    const r1 = reliever("r1");
+    const r2 = reliever("r2");
+    const g0: GameState = {
+      ...freshGame(),
+      inning: 7,
+      home: { ...freshGame().home, bullpen: [r1, r2] },
+    };
+    const g = changePitcher(g0, "home", "r1");
+    expect(g.home.pitcher.id).toBe("r1");
+    expect(g.home.pitcherStartedInning).toBe(7);
+    expect(g.home.bullpen.map((p) => p.id)).toEqual(["r2"]);
+  });
+
+  it("ignores unknown pitcher id (state unchanged)", () => {
+    const r1 = reliever("r1");
+    const g0: GameState = {
+      ...freshGame(),
+      home: { ...freshGame().home, bullpen: [r1] },
+    };
+    const g = changePitcher(g0, "home", "nope");
+    expect(g).toEqual(g0);
+  });
+});
+
+describe("pinchHit", () => {
+  it("replaces the current batter, removes pinch hitter from bench", () => {
+    const ph = batter("pinch");
+    const g0: GameState = {
+      ...freshGame(),
+      away: {
+        ...freshGame().away,
+        battingIndex: 4,
+        bench: [ph],
+      },
+    };
+    const g = pinchHit(g0, "away", "pinch");
+    expect(g.away.lineup[4].id).toBe("pinch");
+    expect(g.away.lineup[3].id).toBe("a3"); // others untouched
+    expect(g.away.bench).toEqual([]);
+  });
+
+  it("ignores unknown bench id (state unchanged)", () => {
+    const g0 = freshGame();
+    const g = pinchHit(g0, "away", "nope");
+    expect(g).toEqual(g0);
   });
 });
 
