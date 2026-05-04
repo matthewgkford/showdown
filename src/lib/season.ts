@@ -21,6 +21,17 @@ function notify(): void {
   for (const l of listeners) l();
 }
 
+// Slug renames over time. Apply on load so existing saves keep working.
+// Currently just one entry from the 2026-05-04 typo fix (skylinders →
+// skyliners); add more as needed.
+const SLUG_RENAMES: Record<string, string> = {
+  skylinders: "skyliners",
+};
+
+function rename(slug: string): string {
+  return SLUG_RENAMES[slug] ?? slug;
+}
+
 function loadInitial(): void {
   if (initialized) return;
   initialized = true;
@@ -37,12 +48,26 @@ function loadInitial(): void {
       // Pre-Stage-4 saves don't have a `schedule` field. Generate one
       // on first read so existing seasons keep working without a manual
       // reset, then re-persist.
-      const needsMigration = !Array.isArray(parsed.schedule);
+      const renamedPlayerSlug = rename(parsed.playerTeamSlug);
+      const renamedSchedule = Array.isArray(parsed.schedule)
+        ? parsed.schedule.map((g) => ({
+            ...g,
+            awaySlug: rename(g.awaySlug),
+            homeSlug: rename(g.homeSlug),
+          }))
+        : generateSchedule();
+      const needsMigration =
+        !Array.isArray(parsed.schedule) ||
+        renamedPlayerSlug !== parsed.playerTeamSlug ||
+        renamedSchedule.some((g, i) => {
+          const orig = parsed.schedule![i];
+          return g.awaySlug !== orig.awaySlug || g.homeSlug !== orig.homeSlug;
+        });
       seasonState = {
-        playerTeamSlug: parsed.playerTeamSlug,
+        playerTeamSlug: renamedPlayerSlug,
         currentLeagueTier: parsed.currentLeagueTier,
         startedAt: parsed.startedAt,
-        schedule: parsed.schedule ?? generateSchedule(),
+        schedule: renamedSchedule,
       };
       if (needsMigration) persist();
     }

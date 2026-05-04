@@ -448,7 +448,7 @@ function TeamPicker({
           alt={team.name}
           width={320}
           height={320}
-          className="h-24 w-24 sm:h-32 sm:w-32 object-contain"
+          className="h-24 w-24 sm:h-32 sm:w-32 rounded-lg object-contain"
           priority
         />
       </div>

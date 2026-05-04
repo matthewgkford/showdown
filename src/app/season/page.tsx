@@ -119,7 +119,7 @@ export default function SeasonPage() {
               alt={team.name}
               width={320}
               height={320}
-              className="h-28 w-28 sm:h-32 sm:w-32 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
+              className="h-28 w-28 sm:h-32 sm:w-32 rounded-lg object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
               priority
             />
             <div className="flex-1 text-center sm:text-left">
@@ -304,7 +304,7 @@ function UpcomingRow({
         alt={opponent.name}
         width={48}
         height={48}
-        className="h-5 w-5 object-contain"
+        className="h-5 w-5 rounded-sm object-contain"
       />
       <span className="flex-1 truncate text-zinc-200">{opponent.name}</span>
     </div>
@@ -342,7 +342,7 @@ function ResultRow({
         alt={opponent.name}
         width={48}
         height={48}
-        className="h-5 w-5 object-contain"
+        className="h-5 w-5 rounded-sm object-contain"
       />
       <span className="flex-1 truncate text-zinc-300">{opponent.name}</span>
       <span className="font-mono text-zinc-200 tabular-nums">
@@ -385,7 +385,7 @@ function StandingsRow({
         alt={team.name}
         width={48}
         height={48}
-        className="h-5 w-5 object-contain"
+        className="h-5 w-5 rounded-sm object-contain"
       />
       <Link
         href={`/team/${team.slug}`}

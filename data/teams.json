@@ -20,12 +20,12 @@
     "stadium": null
   },
   {
-    "slug": "skylinders",
-    "name": "Skylinders",
+    "slug": "skyliners",
+    "name": "Skyliners",
     "shortName": "SKY",
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1A1F2E", "accent": "#E8B547", "light": "#F2EAD6" },
-    "logos": { "primary": "/logos/skylinders/primary.png" },
+    "logos": { "primary": "/logos/skyliners/primary.png" },
     "flavor": "Plays at the overlook with the Manhattan skyline behind them. Dignified, scenic, very particular about the view.",
     "stadium": null
   },

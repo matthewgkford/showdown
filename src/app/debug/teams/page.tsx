@@ -60,7 +60,7 @@ function TeamTile({ team }: { team: Team }) {
           alt={team.name}
           width={224}
           height={224}
-          className="h-full w-full object-contain"
+          className="h-full w-full rounded-lg object-contain"
           priority
         />
       </div>

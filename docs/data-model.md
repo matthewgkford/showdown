@@ -350,7 +350,7 @@ type Division = {
 };
 ```
 
-`data/divisions.json` — Turnpike (Bagels, Pepperoni Slices, Skylinders, Lincoln Tunnellers, Parkways) and Garden State (Mischief Nighters, Diner Rats, Boardwalk Bandits, Rippers, Meadowlands).
+`data/divisions.json` — Turnpike (Bagels, Pepperoni Slices, Skyliners, Lincoln Tunnellers, Parkways) and Garden State (Mischief Nighters, Diner Rats, Boardwalk Bandits, Rippers, Meadowlands).
 
 ### League (tier)
 

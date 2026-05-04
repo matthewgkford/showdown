@@ -99,7 +99,7 @@ export default function StandingsPage() {
                           alt={team.name}
                           width={48}
                           height={48}
-                          className="h-7 w-7 object-contain"
+                          className="h-7 w-7 rounded-md object-contain"
                         />
                         <span className="font-semibold">{team.name}</span>
                         {isPlayer && (
@@ -158,7 +158,7 @@ export default function StandingsPage() {
                           alt={team.name}
                           width={32}
                           height={32}
-                          className="h-5 w-5 object-contain"
+                          className="h-5 w-5 rounded-sm object-contain"
                         />
                         <span>{team.name}</span>
                       </Link>

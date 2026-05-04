@@ -81,7 +81,7 @@ export default function ChooseTeamPage() {
             alt={currentTeam.name}
             width={320}
             height={320}
-            className="h-32 w-32 sm:h-40 sm:w-40 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
+            className="h-32 w-32 sm:h-40 sm:w-40 rounded-lg object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
             priority
           />
           <div className="text-center">
@@ -250,7 +250,7 @@ function TeamTile({
           alt={team.name}
           width={224}
           height={224}
-          className="h-full w-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+          className="h-full w-full rounded-lg object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
           priority
         />
       </div>
@@ -305,7 +305,7 @@ function ConfirmModal({
                 alt={team.name}
                 width={320}
                 height={320}
-                className="h-full w-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.55)]"
+                className="h-full w-full rounded-lg object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.55)]"
                 priority
               />
             </div>
