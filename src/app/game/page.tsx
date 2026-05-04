@@ -576,8 +576,12 @@ function FieldView({
         </div>
         <div className="text-xs sm:text-sm text-zinc-400">{justBatted.name}</div>
         {halfEnded && !gameOver && (
-          <div className="mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wider text-rose-400">
-            Side retired
+          <div
+            className={`mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wider ${
+              game.inning >= 10 ? "text-amber-400" : "text-rose-400"
+            }`}
+          >
+            {game.inning >= 10 ? "Extra innings" : "Side retired"}
           </div>
         )}
       </motion.div>
@@ -594,7 +598,7 @@ function FieldView({
           className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
         >
           {halfEnded
-            ? `${game.half === "top" ? "Top" : "Bottom"} of ${game.inning} →`
+            ? `${game.half === "top" ? "Top" : "Bottom"} of ${game.inning}${game.inning > 9 ? " (extras)" : ""} →`
             : "Next batter →"}
         </button>
       )}

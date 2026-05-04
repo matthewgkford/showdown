@@ -8,6 +8,11 @@ export function Scoreboard({ state }: { state: GameState }) {
           {state.half === "top" ? "▲" : "▼"}
         </span>
         <span className="font-bold text-zinc-100">{state.inning}</span>
+        {state.inning > 9 && (
+          <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">
+            ext
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-2 font-mono">
