@@ -134,6 +134,15 @@ describe("calculateAdvantage", () => {
     expect(calculateAdvantage(pedro, giambi, 6)).toBe("batter");
     expect(calculateAdvantage(pedro, giambi, 7)).toBe("pitcher");
   });
+
+  it("fatigue subtracts from the pitch total", () => {
+    // pitchRoll 6 + control 5 = 11 > OB 10 → pitcher (no fatigue)
+    expect(calculateAdvantage(pedro, lindor, 6, 0)).toBe("pitcher");
+    // …with fatigue 2: 6 + 5 - 2 = 9 ≤ 10 → batter
+    expect(calculateAdvantage(pedro, lindor, 6, 2)).toBe("batter");
+    // pitchRoll 8 + 5 - 2 = 11 still > 10 → pitcher
+    expect(calculateAdvantage(pedro, lindor, 8, 2)).toBe("pitcher");
+  });
 });
 
 describe("getOutcome — pitcher chart (Pedro)", () => {

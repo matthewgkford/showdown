@@ -24,6 +24,8 @@ import {
   checkGameOver,
   currentBatter,
   currentPitcher,
+  fieldingTeam,
+  pitcherFatigue,
   startGame,
 } from "@/lib/gameState";
 import { DICE_TUMBLE_MS, Dice } from "@/components/Dice";
@@ -216,13 +218,17 @@ function Play({
 
   const pitcher = useMemo(() => currentPitcher(game), [game]);
   const batter = useMemo(() => currentBatter(game), [game]);
+  const fatigue = useMemo(
+    () => pitcherFatigue(fieldingTeam(game), game.inning),
+    [game],
+  );
 
   function tapPitcher() {
     if (stage.kind !== "idle") return;
     const pitchRoll = rollD20();
     setStage({ kind: "pitcher-rolling", pitchRoll });
     setTimeout(() => {
-      const advantage = calculateAdvantage(pitcher, batter, pitchRoll);
+      const advantage = calculateAdvantage(pitcher, batter, pitchRoll, fatigue);
       setStage({ kind: "pitcher-settled", pitchRoll, advantage });
     }, DICE_TUMBLE_MS);
   }
@@ -315,10 +321,11 @@ function Play({
         <>
           <div className="flex-1 min-h-0 grid grid-cols-2 gap-3 sm:gap-6">
             <CardSlot
-              label={`P · ${pitcher.name}`}
+              label={`P · ${pitcher.name}${fatigue > 0 ? ` (−${fatigue})` : ""}`}
               card={pitcher}
               disabled={isLocked}
               active={stage.kind === "idle" || stage.kind === "pitcher-rolling"}
+              warning={fatigue > 0}
             />
             <CardSlot
               label={`#${currentBatterSlot(game) + 1} · ${batter.name}`}
@@ -344,6 +351,7 @@ function Play({
               pitcher={pitcher}
               batter={batter}
               advantageHolder={advantageHolder}
+              fatigue={fatigue}
             />
             <Dice
               tone="batter"
@@ -368,17 +376,25 @@ function CardSlot({
   card,
   disabled,
   active,
+  warning,
 }: {
   label: string;
   card: CardType;
   disabled?: boolean;
   active?: boolean;
+  warning?: boolean;
 }) {
   return (
     <div className="flex flex-col min-h-0">
       <div
         className={`shrink-0 truncate text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 ${
-          disabled ? "text-zinc-600" : active ? "text-emerald-300" : "text-zinc-500"
+          disabled
+            ? "text-zinc-600"
+            : warning
+              ? "text-amber-400"
+              : active
+                ? "text-emerald-300"
+                : "text-zinc-500"
         }`}
       >
         {label}
@@ -405,11 +421,13 @@ function Center({
   pitcher,
   batter,
   advantageHolder,
+  fatigue,
 }: {
   stage: Stage;
   pitcher: PitcherCard;
   batter: BatterCard;
   advantageHolder: string | null;
+  fatigue: number;
 }) {
   return (
     <div className="flex-1 min-w-0 text-center">
@@ -445,7 +463,9 @@ function Center({
             className="space-y-0.5"
           >
             <div className="text-[10px] sm:text-xs text-zinc-500">
-              {stage.pitchRoll}+{pitcher.control}={stage.pitchRoll + pitcher.control} vs OB {batter.onBase}
+              {stage.pitchRoll}+{pitcher.control}
+              {fatigue > 0 && <span className="text-amber-400">−{fatigue}</span>}
+              ={stage.pitchRoll + pitcher.control - fatigue} vs OB {batter.onBase}
             </div>
             <div className="text-sm font-semibold">
               <span

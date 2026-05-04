@@ -7,6 +7,7 @@ import {
   checkGameOver,
   currentBatter,
   currentPitcher,
+  pitcherFatigue,
   startGame,
   type GameState,
 } from "./gameState";
@@ -426,5 +427,40 @@ describe("checkGameOver", () => {
       away: { ...freshGame().away, runs: 3 },
     };
     expect(checkGameOver(g)).toEqual({ winner: "home" });
+  });
+});
+
+describe("pitcherFatigue", () => {
+  // The fake pitcher in this file has IP 6, started in inning 1 (default).
+  it("0 within IP", () => {
+    const g = freshGame();
+    expect(pitcherFatigue(g.home, 1)).toBe(0);
+    expect(pitcherFatigue(g.home, 5)).toBe(0);
+    expect(pitcherFatigue(g.home, 6)).toBe(0); // IP=6 → through 6th is fine
+  });
+
+  it("1 in the inning right after IP", () => {
+    const g = freshGame();
+    expect(pitcherFatigue(g.home, 7)).toBe(1);
+  });
+
+  it("scales linearly past IP", () => {
+    const g = freshGame();
+    expect(pitcherFatigue(g.home, 8)).toBe(2);
+    expect(pitcherFatigue(g.home, 10)).toBe(4);
+  });
+
+  it("counts only innings pitched since the pitcher entered", () => {
+    // Reliever entered in inning 6, IP 4 → through inning 9 is exactly IP.
+    const g: GameState = {
+      ...freshGame(),
+      home: {
+        ...freshGame().home,
+        pitcher: { ...freshGame().home.pitcher, ip: 4 },
+        pitcherStartedInning: 6,
+      },
+    };
+    expect(pitcherFatigue(g.home, 9)).toBe(0);
+    expect(pitcherFatigue(g.home, 10)).toBe(1);
   });
 });

@@ -29,13 +29,15 @@ export function rollD20(rng: Rng = Math.random): number {
 }
 
 // 2001 set rule: pitcher must beat the batter's on-base value strictly.
-// A tie goes to the batter.
+// A tie goes to the batter. Fatigue (innings pitched beyond IP, cumulative)
+// subtracts from the pitcher's effective control.
 export function calculateAdvantage(
   pitcher: PitcherCard,
   batter: BatterCard,
   pitchRoll: number,
+  fatigue: number = 0,
 ): Advantage {
-  return pitchRoll + pitcher.control > batter.onBase ? "pitcher" : "batter";
+  return pitchRoll + pitcher.control - fatigue > batter.onBase ? "pitcher" : "batter";
 }
 
 export function getOutcome(
@@ -60,10 +62,11 @@ export function playAtBat(
   pitcher: PitcherCard,
   batter: BatterCard,
   rng: Rng = Math.random,
+  fatigue: number = 0,
 ): AtBatResult {
   const pitchRoll = rollD20(rng);
-  const pitchTotal = pitchRoll + pitcher.control;
-  const advantage = calculateAdvantage(pitcher, batter, pitchRoll);
+  const pitchTotal = pitchRoll + pitcher.control - fatigue;
+  const advantage = calculateAdvantage(pitcher, batter, pitchRoll, fatigue);
   const swingRoll = rollD20(rng);
   const outcome = getOutcome(pitcher, batter, advantage, swingRoll);
   return { pitchRoll, pitchTotal, advantage, swingRoll, outcome };

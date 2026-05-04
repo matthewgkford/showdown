@@ -14,6 +14,7 @@ export type TeamState = {
   team: Team;
   lineup: BatterCard[]; // 9 batters in order
   pitcher: PitcherCard;
+  pitcherStartedInning: number; // inning the current pitcher entered the game
   battingIndex: number; // 0..lineup.length-1, who's up next
   runs: number;
 };
@@ -38,8 +39,8 @@ export function startGame(
     half: "top",
     outs: 0,
     bases: EMPTY_BASES,
-    away: { ...away, battingIndex: 0, runs: 0 },
-    home: { ...home, battingIndex: 0, runs: 0 },
+    away: { ...away, pitcherStartedInning: 1, battingIndex: 0, runs: 0 },
+    home: { ...home, pitcherStartedInning: 1, battingIndex: 0, runs: 0 },
   };
 }
 
@@ -168,6 +169,21 @@ export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState
     away: state.half === "top" ? updatedTeam : state.away,
     home: state.half === "bottom" ? updatedTeam : state.home,
   };
+}
+
+// Cumulative fatigue penalty per the 2001 set rules: a pitcher pitches
+// normally up to and including their IP-th inning of work; every inning
+// beyond that subtracts 1 from their pitch rolls.
+//
+// inningsPitched = currentInning - team.pitcherStartedInning + 1
+// fatigue        = max(0, inningsPitched - pitcher.ip)
+//
+// Example: starter, IP 7, currentInning 9 → 9 innings pitched, fatigue 2.
+// Example: reliever entered in inning 6, currentInning 8, IP 4 → pitched
+// 3 innings, fatigue 0.
+export function pitcherFatigue(team: TeamState, currentInning: number): number {
+  const inningsPitched = currentInning - team.pitcherStartedInning + 1;
+  return Math.max(0, inningsPitched - team.pitcher.ip);
 }
 
 function onBaseCount(
