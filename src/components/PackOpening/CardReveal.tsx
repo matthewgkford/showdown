@@ -45,7 +45,7 @@ export function CardReveal({
           className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50"
           style={{ backfaceVisibility: "hidden" }}
         >
-          <CardBack pack={pack} />
+          <CardBack pack={pack} size={size} />
         </div>
         <div
           className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50"
@@ -69,10 +69,17 @@ export function CardReveal({
   );
 }
 
-function CardBack({ pack }: { pack: Pack }) {
+function CardBack({ pack, size }: { pack: Pack; size: number }) {
+  // Scale text + letter-spacing to the card width, not the viewport. The
+  // wordmark is decorative — at small sizes we drop the tracking so it
+  // doesn't overflow the rounded edge.
+  const fontSize = Math.max(6, Math.min(13, size * 0.045));
+  const tracking = size > 100 ? "0.3em" : "0.16em";
+  const dotSize = Math.max(8, Math.min(22, size * 0.075));
+
   return (
     <div
-      className="w-full h-full flex flex-col items-center justify-center"
+      className="relative w-full h-full flex flex-col items-center justify-center"
       style={{
         background: `linear-gradient(135deg, ${pack.accentColor} 0%, ${pack.accentColor}cc 50%, ${pack.accentColor}55 100%)`,
       }}
@@ -81,10 +88,18 @@ function CardBack({ pack }: { pack: Pack }) {
         className="absolute inset-2 rounded-md border"
         style={{ borderColor: "rgba(255,255,255,0.18)" }}
       />
-      <div className="text-[7px] sm:text-[9px] font-bold uppercase tracking-[0.3em] text-white/80">
+      <div
+        className="font-bold uppercase text-white/80"
+        style={{ fontSize, letterSpacing: tracking }}
+      >
         Showdown
       </div>
-      <div className="mt-1 text-white/40 text-base sm:text-lg font-bold">●</div>
+      <div
+        className="mt-1 text-white/40 font-bold"
+        style={{ fontSize: dotSize }}
+      >
+        ●
+      </div>
     </div>
   );
 }
