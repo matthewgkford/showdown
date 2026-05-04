@@ -1177,8 +1177,25 @@ function currentBatterSlot(g: GameState): number {
 // their base, animated step-by-step around the basepath.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type BasePos = "home" | "first" | "second" | "third" | "scored";
-const BASE_ORDER: BasePos[] = ["home", "first", "second", "third", "scored"];
+// "scoring" is the moment a runner crosses home plate before the run
+// is recorded — visually they're at home, but they're on their way off
+// the field. Lets a homer's batter actually step on the plate instead
+// of vanishing at third. "scored" then removes them from the field.
+type BasePos =
+  | "home"
+  | "first"
+  | "second"
+  | "third"
+  | "scoring"
+  | "scored";
+const BASE_ORDER: BasePos[] = [
+  "home",
+  "first",
+  "second",
+  "third",
+  "scoring",
+  "scored",
+];
 
 type RunnerSnapshot = { card: BatterCard; pos: BasePos };
 
@@ -1208,14 +1225,33 @@ function computeSteps(
     return stuck.length > 0 ? [stuck, []] : [stuck];
   }
 
+  // Fielder's choice on a ground out: there was a runner on 1st pre-play
+  // and the batter ended up there post-play, meaning the lead runner was
+  // forced out. We still want to draw the OG runner on 1st in the first
+  // frame so the player sees who got tagged, but they don't advance.
+  // AnimatePresence will fade them out as the next frame removes them.
+  const isFCGroundOut =
+    outcome === "gb" && !!prev.first && current.first?.id === justBatted.id;
+  const forcedOutId = isFCGroundOut ? prev.first?.id : null;
+
   const initial: RunnerSnapshot[] = [];
   if (prev.first) initial.push({ card: prev.first, pos: "first" });
   if (prev.second) initial.push({ card: prev.second, pos: "second" });
   if (prev.third) initial.push({ card: prev.third, pos: "third" });
-  if (!isOut(outcome)) initial.push({ card: justBatted, pos: "home" });
+  // Add the batter to the diamond if they made it on base. That includes
+  // hits, walks, AND fielder's-choice ground outs (they take first).
+  if (!isOut(outcome) || isFCGroundOut) {
+    initial.push({ card: justBatted, pos: "home" });
+  }
+
+  // Subsequent frames don't include the forced-out runner — they fade in
+  // place via AnimatePresence as the simulation moves on.
+  const advancing = forcedOutId
+    ? initial.filter((r) => r.card.id !== forcedOutId)
+    : initial;
 
   const dest: Record<string, BasePos> = {};
-  for (const r of initial) {
+  for (const r of advancing) {
     if (current.first?.id === r.card.id) dest[r.card.id] = "first";
     else if (current.second?.id === r.card.id) dest[r.card.id] = "second";
     else if (current.third?.id === r.card.id) dest[r.card.id] = "third";
@@ -1223,8 +1259,10 @@ function computeSteps(
   }
 
   const frames: RunnerSnapshot[][] = [initial];
-  let cur = initial;
-  for (let safety = 0; safety < 6; safety++) {
+  let cur = advancing;
+  // 6 hops from "home" (idx 0) to "scored" (idx 5) covers the longest
+  // possible path; a couple extra iterations leaves headroom.
+  for (let safety = 0; safety < 7; safety++) {
     let moved = false;
     const next: RunnerSnapshot[] = cur.map((r) => {
       const dIdx = BASE_ORDER.indexOf(dest[r.card.id]);
@@ -1514,25 +1552,25 @@ function OutcomeTrajectory({ outcome }: { outcome: Outcome }) {
 // for a walk.
 function OutcomeBadge({ outcome }: { outcome: Outcome }) {
   if (outcome === "so") {
+    // Big red K stamps in cleanly — start large + faded, slam down to
+    // size with a tight spring. No rotation jitter, no multi-keyframe
+    // wobble; one motion, lands hard.
     return (
       <motion.div
         key="K"
-        initial={{ scale: 0, rotate: -25, opacity: 0 }}
-        animate={{
-          scale: [0, 1.25, 1, 1.04, 1],
-          rotate: [-25, 8, 0, -3, 0],
-          opacity: 1,
-        }}
+        initial={{ scale: 2.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{
-          duration: 0.75,
-          ease: "easeOut",
-          times: [0, 0.4, 0.6, 0.85, 1],
+          type: "spring",
+          stiffness: 360,
+          damping: 16,
+          mass: 0.9,
         }}
-        className="font-black text-rose-500 leading-none"
+        className="font-black text-rose-500 leading-none italic"
         style={{
-          fontSize: "min(40vw, 18rem)",
+          fontSize: "min(45vw, 20rem)",
           textShadow:
-            "0 4px 24px rgba(244,63,94,0.55), 0 0 4px rgba(0,0,0,0.6)",
+            "0 6px 28px rgba(244,63,94,0.6), 0 0 6px rgba(0,0,0,0.7)",
         }}
       >
         K
@@ -1622,6 +1660,10 @@ const POSITION_CLASS: Record<Exclude<BasePos, "scored">, string> = {
   first: "right-0 top-1/2 -translate-y-1/2",
   second: "left-1/2 -translate-x-1/2 top-0",
   third: "left-0 top-1/2 -translate-y-1/2",
+  // "scoring" sits on home plate — same spot as where a batter starts.
+  // Runners pass through this for one frame as they cross the plate, so
+  // the player actually sees the run get scored before the card exits.
+  scoring: "left-1/2 -translate-x-1/2 bottom-0",
 };
 
 function RunnerCard({ card, pos }: { card: BatterCard; pos: BasePos }) {

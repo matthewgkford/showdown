@@ -296,7 +296,7 @@ describe("walk forcing", () => {
 });
 
 describe("outs", () => {
-  it.each(["so", "gb", "fb", "pu"] as const)("%s increments outs and doesn't advance", (out) => {
+  it.each(["so", "fb", "pu"] as const)("%s increments outs and doesn't advance", (out) => {
     const g0: GameState = {
       ...freshGame(),
       bases: { first: batter("r1"), second: null, third: null },
@@ -304,6 +304,57 @@ describe("outs", () => {
     const g = applyAtBatOutcome(g0, out);
     expect(g.outs).toBe(1);
     expect(g.bases.first?.id).toBe("r1");
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("gb with empty bases: batter is out, no advance", () => {
+    const g0 = freshGame();
+    const g = applyAtBatOutcome(g0, "gb");
+    expect(g.outs).toBe(1);
+    expect(g.bases).toEqual(EMPTY_BASES);
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("gb with runner on 1st: fielder's choice — runner out, batter to 1st", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: null, third: null },
+    };
+    const g = applyAtBatOutcome(g0, "gb");
+    expect(g.outs).toBe(1);
+    // Batter takes 1st (lineup[0] is the batter at battingIndex=0)
+    expect(g.bases.first?.id).toBe(g0.away.lineup[0].id);
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third).toBeNull();
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("gb with runner on 2nd only: regular ground out, runner holds", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: null, second: batter("r2"), third: null },
+    };
+    const g = applyAtBatOutcome(g0, "gb");
+    expect(g.outs).toBe(1);
+    expect(g.bases.first).toBeNull();
+    expect(g.bases.second?.id).toBe("r2");
+    expect(g.bases.third).toBeNull();
+  });
+
+  it("gb with bases loaded: lead force out, batter to 1st, others hold", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: {
+        first: batter("r1"),
+        second: batter("r2"),
+        third: batter("r3"),
+      },
+    };
+    const g = applyAtBatOutcome(g0, "gb");
+    expect(g.outs).toBe(1);
+    expect(g.bases.first?.id).toBe(g0.away.lineup[0].id);
+    expect(g.bases.second?.id).toBe("r2");
+    expect(g.bases.third?.id).toBe("r3");
     expect(g.away.runs).toBe(0);
   });
 

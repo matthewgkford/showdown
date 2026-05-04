@@ -80,7 +80,10 @@ const OUT_OUTCOMES: ReadonlySet<Outcome> = new Set(["so", "gb", "fb", "pu"]);
 //   triple     — runners all score, batter to 3rd
 //   homer      — runners + batter all score
 //   bb         — batter to 1st; runners advance only if forced
-//   so/gb/fb/pu — out, no advance
+//   gb         — fielder's choice if a runner is on 1st (the lead runner is
+//                forced out and the batter takes 1st, other runners hold);
+//                otherwise the batter is out and runners hold
+//   so/fb/pu   — out, no advance
 export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState {
   const team = battingTeam(state);
   const batter = team.lineup[team.battingIndex];
@@ -137,9 +140,17 @@ export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState
         first = batter;
       }
       break;
-    // Outs: no base or run change.
-    case "so":
     case "gb":
+      // Fielder's choice: with a runner on first, defense gets the
+      // force-out at second and the batter takes first. Runners on
+      // 2nd/3rd hold (they're not forced). With no runner on 1st, it's
+      // a routine ground out — batter is out, bases unchanged.
+      if (first) {
+        first = batter;
+      }
+      break;
+    // Other outs: no base or run change.
+    case "so":
     case "fb":
     case "pu":
       break;
