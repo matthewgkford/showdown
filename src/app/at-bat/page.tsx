@@ -268,28 +268,33 @@ function CenterPanel({
         {stage.kind === "batter-settled" && (
           <motion.div
             key="batter-settled"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 22 }}
             className="space-y-1"
           >
             <div className="text-[10px] sm:text-xs text-zinc-500">
               {stage.pitchRoll}+{pitcher.control} → {advantageHolder} adv · swing {stage.swingRoll}
             </div>
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7, type: "spring", stiffness: 380, damping: 22 }}
               className={`text-2xl sm:text-3xl font-bold tracking-tight ${
                 isOut(stage.outcome) ? "text-rose-400" : "text-emerald-400"
               }`}
             >
               {outcomeLabel(stage.outcome).toUpperCase()}
-            </div>
-            <button
+            </motion.div>
+            <motion.button
               onClick={onNext}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.0 }}
               className="mt-1 rounded-full bg-zinc-800 px-4 py-1.5 text-xs sm:text-sm text-zinc-200 hover:bg-zinc-700"
             >
               Next at-bat
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>

@@ -190,11 +190,19 @@ type Stage =
       swingRoll: number;
     }
   | {
+      kind: "batter-settled";
+      pitchRoll: number;
+      advantage: Advantage;
+      swingRoll: number;
+    }
+  | {
       kind: "field";
       outcome: Outcome;
       justBatted: BatterCard;
       preBases: Bases;
     };
+
+const SETTLE_HOLD_MS = 800;
 
 function Play({
   initial,
@@ -225,14 +233,17 @@ function Play({
     const { pitchRoll, advantage } = stage;
     setStage({ kind: "batter-rolling", pitchRoll, advantage, swingRoll });
     setTimeout(() => {
-      const outcome = getOutcome(pitcher, batter, advantage, swingRoll);
-      // Capture the batter who just hit and the bases as they were
-      // before the play resolves. The field view uses preBases to
-      // animate runners step-by-step around the diamond.
-      const justBatted = batter;
-      const preBases = game.bases;
-      setStage({ kind: "field", outcome, justBatted, preBases });
-      setGame((g) => applyAtBatOutcome(g, outcome));
+      // The dice has stopped tumbling — hold on the settled face for a
+      // beat so the user can read the swing roll before the outcome
+      // and field view take over.
+      setStage({ kind: "batter-settled", pitchRoll, advantage, swingRoll });
+      setTimeout(() => {
+        const outcome = getOutcome(pitcher, batter, advantage, swingRoll);
+        const justBatted = batter;
+        const preBases = game.bases;
+        setStage({ kind: "field", outcome, justBatted, preBases });
+        setGame((g) => applyAtBatOutcome(g, outcome));
+      }, SETTLE_HOLD_MS);
     }, DICE_TUMBLE_MS);
   }
 
@@ -254,13 +265,17 @@ function Play({
         : "settled";
 
   const swingValue =
-    stage.kind === "batter-rolling" ? stage.swingRoll : null;
+    stage.kind === "batter-rolling" || stage.kind === "batter-settled"
+      ? stage.swingRoll
+      : null;
   const swingStatus =
     stage.kind === "pitcher-settled"
       ? "idle"
       : stage.kind === "batter-rolling"
         ? "rolling"
-        : "idle";
+        : stage.kind === "batter-settled"
+          ? "settled"
+          : "idle";
 
   const advantage = "advantage" in stage ? stage.advantage : null;
   const advantageHolder =
@@ -270,7 +285,10 @@ function Play({
         ? batter.name
         : null;
 
-  const isLocked = stage.kind === "pitcher-rolling" || stage.kind === "batter-rolling";
+  const isLocked =
+    stage.kind === "pitcher-rolling" ||
+    stage.kind === "batter-rolling" ||
+    stage.kind === "batter-settled";
 
   return (
     <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-3 sm:px-6 sm:py-4">
@@ -306,7 +324,11 @@ function Play({
               label={`#${currentBatterSlot(game) + 1} · ${batter.name}`}
               card={batter}
               disabled={isLocked}
-              active={stage.kind === "pitcher-settled" || stage.kind === "batter-rolling"}
+              active={
+                stage.kind === "pitcher-settled" ||
+                stage.kind === "batter-rolling" ||
+                stage.kind === "batter-settled"
+              }
             />
           </div>
           <div className="shrink-0 mt-3 flex items-center justify-around gap-3">
@@ -414,9 +436,9 @@ function Center({
             …
           </motion.div>
         )}
-        {stage.kind === "pitcher-settled" && (
+        {(stage.kind === "pitcher-settled" || stage.kind === "batter-settled") && (
           <motion.div
-            key="pitcher-settled"
+            key="settled"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -435,7 +457,14 @@ function Center({
               </span>{" "}
               <span className="text-zinc-400">advantage</span>
             </div>
-            <div className="text-[10px] text-zinc-500">Tap the blue die to swing</div>
+            {stage.kind === "pitcher-settled" && (
+              <div className="text-[10px] text-zinc-500">Tap the blue die to swing</div>
+            )}
+            {stage.kind === "batter-settled" && (
+              <div className="text-[10px] text-zinc-500">
+                Swing {stage.swingRoll} on {stage.advantage === "pitcher" ? "pitcher" : "batter"} chart…
+              </div>
+            )}
           </motion.div>
         )}
         {stage.kind === "batter-rolling" && (
