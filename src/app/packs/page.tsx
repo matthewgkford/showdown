@@ -176,12 +176,21 @@ function PackTile({
         })}
       </div>
 
-      <button
-        onClick={onDebugOpen}
-        className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
-      >
-        Open (debug — no animation)
-      </button>
+      <div className="flex gap-2">
+        <Link
+          href={`/packs/${pack.id}/open`}
+          className="flex-1 rounded-md bg-emerald-500 px-3 py-2 text-center text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
+        >
+          Open
+        </Link>
+        <button
+          onClick={onDebugOpen}
+          className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+          title="Add cards instantly without the reveal animation"
+        >
+          Skip
+        </button>
+      </div>
     </article>
   );
 }
