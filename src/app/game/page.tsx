@@ -475,9 +475,20 @@ function TeamPicker({
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Stage =
-  | { kind: "idle" }
+  // At-bat opens with both cards on screen side-by-side ("here's the
+  // matchup"); auto-advances after a beat into pitcher-ready.
+  | { kind: "intro" }
+  // Pitcher card is in focus, batter peeks from the side. Awaiting the
+  // pitch — either a player tap or the CPU auto-rolling.
+  | { kind: "pitcher-ready" }
   | { kind: "pitcher-rolling"; pitchRoll: number }
+  // Pitch has settled; pitcher card stays in focus so the player can read
+  // the dice number AND inspect the card. Auto-advances to batter-ready
+  // after PITCH_HOLD_MS.
   | { kind: "pitcher-settled"; pitchRoll: number; advantage: Advantage }
+  // Cards have swapped — batter is now in focus. Advantage announced.
+  // Awaiting the swing.
+  | { kind: "batter-ready"; pitchRoll: number; advantage: Advantage }
   | {
       kind: "batter-rolling";
       pitchRoll: number;
@@ -497,10 +508,14 @@ type Stage =
       preBases: Bases;
     };
 
-// Hold on the swing roll for a beat before revealing the outcome — gives
-// the user time to read the number and feel the suspense. Bumped from
-// 800 → 1500ms because the previous timing was too fast to register.
-const SETTLE_HOLD_MS = 1500;
+// At-bat opening: both cards visible side-by-side, then auto-transitions.
+const INTRO_HOLD_MS = 1200;
+// After the pitch settles, hold on the pitcher card with the dice
+// number visible long enough to read the number AND check the card.
+const PITCH_HOLD_MS = 2200;
+// Same idea after the swing — slightly longer because the next thing
+// is the outcome reveal and we want the swing roll to land first.
+const SWING_HOLD_MS = 2500;
 // Delay before the AI auto-rolls a die on the player's behalf when the
 // opponent is acting. Long enough to feel like the CPU is "thinking,"
 // short enough that the player isn't waiting around.
@@ -523,7 +538,7 @@ function Play({
   onPersist?: (state: GameState) => void;
 }) {
   const [game, setGame] = useState<GameState>(initial);
-  const [stage, setStage] = useState<Stage>({ kind: "idle" });
+  const [stage, setStage] = useState<Stage>({ kind: "intro" });
   const [manageOpen, setManageOpen] = useState(false);
 
   const pitcher = useMemo(() => currentPitcher(game), [game]);
@@ -549,14 +564,14 @@ function Play({
   const battingSide: "home" | "away" =
     game.half === "top" ? "away" : "home";
   const playerCanPitch =
-    stage.kind === "idle" &&
+    stage.kind === "pitcher-ready" &&
     (playerSide === null || playerSide === fieldingSide);
   const playerCanSwing =
-    stage.kind === "pitcher-settled" &&
+    stage.kind === "batter-ready" &&
     (playerSide === null || playerSide === battingSide);
 
   function tapPitcher() {
-    if (stage.kind !== "idle") return;
+    if (stage.kind !== "pitcher-ready") return;
     const pitchRoll = rollD20();
     setStage({ kind: "pitcher-rolling", pitchRoll });
     setTimeout(() => {
@@ -566,7 +581,7 @@ function Play({
   }
 
   function tapBatter() {
-    if (stage.kind !== "pitcher-settled") return;
+    if (stage.kind !== "batter-ready") return;
     const swingRoll = rollD20();
     const { pitchRoll, advantage } = stage;
     setStage({ kind: "batter-rolling", pitchRoll, advantage, swingRoll });
@@ -578,18 +593,39 @@ function Play({
         const preBases = game.bases;
         setStage({ kind: "field", outcome, justBatted, preBases });
         setGame((g) => applyAtBatOutcome(g, outcome));
-      }, SETTLE_HOLD_MS);
+      }, SWING_HOLD_MS);
     }, DICE_TUMBLE_MS);
   }
 
   function nextBatter() {
-    setStage({ kind: "idle" });
+    setStage({ kind: "intro" });
   }
+
+  // Auto-advance from intro → pitcher-ready after the matchup beat.
+  useEffect(() => {
+    if (stage.kind !== "intro") return;
+    const t = setTimeout(
+      () => setStage({ kind: "pitcher-ready" }),
+      INTRO_HOLD_MS,
+    );
+    return () => clearTimeout(t);
+  }, [stage.kind]);
+
+  // Auto-advance from pitcher-settled → batter-ready after the read pause.
+  useEffect(() => {
+    if (stage.kind !== "pitcher-settled") return;
+    const { pitchRoll, advantage } = stage;
+    const t = setTimeout(
+      () => setStage({ kind: "batter-ready", pitchRoll, advantage }),
+      PITCH_HOLD_MS,
+    );
+    return () => clearTimeout(t);
+  }, [stage]);
 
   // Auto-roll the pitch when the player is on offense and waiting for the
   // CPU to throw. Cleanup clears the timeout if the stage changes first.
   useEffect(() => {
-    if (stage.kind !== "idle") return;
+    if (stage.kind !== "pitcher-ready") return;
     if (playerSide === null) return;
     if (fieldingSide === playerSide) return;
     const t = setTimeout(() => tapPitcher(), AUTO_PAUSE_MS);
@@ -599,7 +635,7 @@ function Play({
 
   // Auto-swing when the player is on defense and the CPU batter is up.
   useEffect(() => {
-    if (stage.kind !== "pitcher-settled") return;
+    if (stage.kind !== "batter-ready") return;
     if (playerSide === null) return;
     if (battingSide === playerSide) return;
     const t = setTimeout(() => tapBatter(), AUTO_PAUSE_MS);
@@ -607,20 +643,25 @@ function Play({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage.kind, battingSide, playerSide]);
 
-  // Single-card layout: while the pitcher is winding up we show the
-  // pitcher card; once advantage is decided we swap to the batter card
-  // for the swing.
-  const showingPitcher =
-    stage.kind === "idle" || stage.kind === "pitcher-rolling";
+  // Card focus mode for the two-card layout. Determines which card sits
+  // at the centre and which peeks from the side.
+  const focus: CardFocus =
+    stage.kind === "intro"
+      ? "intro"
+      : stage.kind === "pitcher-ready" ||
+          stage.kind === "pitcher-rolling" ||
+          stage.kind === "pitcher-settled"
+        ? "pitcher"
+        : "batter";
 
   const pitchValue =
-    stage.kind === "idle"
+    stage.kind === "intro" || stage.kind === "pitcher-ready"
       ? null
       : "pitchRoll" in stage
         ? stage.pitchRoll
         : null;
   const pitchStatus =
-    stage.kind === "idle"
+    stage.kind === "pitcher-ready" || stage.kind === "intro"
       ? "idle"
       : stage.kind === "pitcher-rolling"
         ? "rolling"
@@ -631,7 +672,7 @@ function Play({
       ? stage.swingRoll
       : null;
   const swingStatus =
-    stage.kind === "pitcher-settled"
+    stage.kind === "batter-ready"
       ? "idle"
       : stage.kind === "batter-rolling"
         ? "rolling"
@@ -659,7 +700,9 @@ function Play({
           >
             End
           </button>
-          {stage.kind === "idle" && (
+          {(stage.kind === "intro" ||
+            stage.kind === "pitcher-ready" ||
+            stage.kind === "batter-ready") && (
             <button
               onClick={() => setManageOpen(true)}
               className="rounded-full border border-zinc-700 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
@@ -700,8 +743,8 @@ function Play({
           onPlayAgain={() => onEnd(game)}
         />
       ) : (
-        <SinglePlayLayout
-          showingPitcher={showingPitcher}
+        <TwoCardLayout
+          focus={focus}
           pitcher={pitcher}
           batter={batter}
           batterSlot={currentBatterSlot(game)}
@@ -716,9 +759,8 @@ function Play({
           playerCanSwing={playerCanSwing}
           isOpponentActing={
             playerSide !== null &&
-            ((stage.kind === "idle" && fieldingSide !== playerSide) ||
-              (stage.kind === "pitcher-settled" &&
-                battingSide !== playerSide))
+            ((stage.kind === "pitcher-ready" && fieldingSide !== playerSide) ||
+              (stage.kind === "batter-ready" && battingSide !== playerSide))
           }
           onTapPitch={tapPitcher}
           onTapSwing={tapBatter}
@@ -728,11 +770,102 @@ function Play({
   );
 }
 
-// Single-card playing layout. The card and the active die swap depending
-// on what stage of the at-bat we're in, keeping mobile from getting
-// crammed and giving each beat (pitch / swing) its own focused moment.
-function SinglePlayLayout({
-  showingPitcher,
+// Card focus mode. "intro" = both cards visible side-by-side at the
+// start of the at-bat. "pitcher" = pitcher card centered, batter peeks
+// from the right. "batter" = batter card centered, pitcher peeks from
+// the left. The TwoCardLayout animates between these via framer-motion.
+type CardFocus = "intro" | "pitcher" | "batter";
+
+type CardSlotPosition = {
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+  opacity: number;
+  scale: number;
+  zIndex: number;
+};
+
+// Card positions per focus mode — pitcher on the left half, batter on
+// the right when both are shown, with the focused card filling more of
+// the area and the off-card tucking away in the opposite corner.
+function pitcherPos(focus: CardFocus): CardSlotPosition {
+  switch (focus) {
+    case "intro":
+      return {
+        left: "5%",
+        top: "5%",
+        width: "42%",
+        height: "90%",
+        opacity: 1,
+        scale: 1,
+        zIndex: 1,
+      };
+    case "pitcher":
+      return {
+        left: "20%",
+        top: "0%",
+        width: "60%",
+        height: "100%",
+        opacity: 1,
+        scale: 1,
+        zIndex: 2,
+      };
+    case "batter":
+      return {
+        left: "0%",
+        top: "55%",
+        width: "22%",
+        height: "42%",
+        opacity: 0.95,
+        scale: 1,
+        zIndex: 1,
+      };
+  }
+}
+
+function batterPos(focus: CardFocus): CardSlotPosition {
+  switch (focus) {
+    case "intro":
+      return {
+        left: "53%",
+        top: "5%",
+        width: "42%",
+        height: "90%",
+        opacity: 1,
+        scale: 1,
+        zIndex: 1,
+      };
+    case "pitcher":
+      return {
+        left: "78%",
+        top: "55%",
+        width: "22%",
+        height: "42%",
+        opacity: 0.95,
+        scale: 1,
+        zIndex: 1,
+      };
+    case "batter":
+      return {
+        left: "20%",
+        top: "0%",
+        width: "60%",
+        height: "100%",
+        opacity: 1,
+        scale: 1,
+        zIndex: 2,
+      };
+  }
+}
+
+const CARD_SPRING = { type: "spring", stiffness: 220, damping: 28 } as const;
+
+// Two-card playing layout. Both pitcher + batter are in the DOM the whole
+// time, framer-motion just slides them between intro / pitcher-focus /
+// batter-focus positions. Keeps the matchup feeling continuous.
+function TwoCardLayout({
+  focus,
   pitcher,
   batter,
   batterSlot,
@@ -749,7 +882,7 @@ function SinglePlayLayout({
   onTapPitch,
   onTapSwing,
 }: {
-  showingPitcher: boolean;
+  focus: CardFocus;
   pitcher: PitcherCard;
   batter: BatterCard;
   batterSlot: number;
@@ -766,71 +899,50 @@ function SinglePlayLayout({
   onTapPitch: () => void;
   onTapSwing: () => void;
 }) {
-  const cardLabel = showingPitcher
-    ? `P · ${pitcher.name}${fatigue > 0 ? ` (−${fatigue})` : ""}`
-    : `#${batterSlot + 1} · ${batter.name}`;
-  const contextLine = showingPitcher
-    ? `Up: #${batterSlot + 1} ${batter.name} · OB ${batter.onBase}`
-    : `vs ${pitcher.name} · Ctrl ${pitcher.control}${
-        fatigue > 0 ? ` (−${fatigue})` : ""
-      }`;
+  const headline =
+    focus === "intro"
+      ? `${pitcher.name} vs ${batter.name}`
+      : focus === "pitcher"
+        ? `P · ${pitcher.name}${fatigue > 0 ? ` (−${fatigue})` : ""}`
+        : `#${batterSlot + 1} · ${batter.name}`;
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <div
         className={`shrink-0 truncate text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 text-center ${
-          fatigue > 0 && showingPitcher ? "text-amber-400" : "text-emerald-300"
+          focus === "pitcher" && fatigue > 0
+            ? "text-amber-400"
+            : focus === "intro"
+              ? "text-zinc-400"
+              : "text-emerald-300"
         }`}
       >
-        {cardLabel}
+        {headline}
       </div>
 
-      <div className="flex-1 min-h-0 flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          {showingPitcher ? (
-            <motion.div
-              key={`pitcher-${pitcher.id}`}
-              initial={{ opacity: 0, x: -16, scale: 0.94 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -16, scale: 0.94 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="h-full flex items-center justify-center"
-            >
-              <Image
-                src={`/cards/${pitcher.id}.png`}
-                alt={pitcher.name}
-                width={1488}
-                height={2079}
-                className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4 ring-rose-400/40"
-                sizes="90vw"
-                priority
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key={`batter-${batter.id}`}
-              initial={{ opacity: 0, x: 16, scale: 0.94 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 16, scale: 0.94 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="h-full flex items-center justify-center"
-            >
-              <Image
-                src={`/cards/${batter.id}.png`}
-                alt={batter.name}
-                width={1488}
-                height={2079}
-                className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4 ring-sky-400/40"
-                sizes="90vw"
-                priority
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="shrink-0 mt-2 text-center text-[10px] sm:text-xs text-zinc-500 truncate">
-        {contextLine}
+      <div className="relative flex-1 min-h-0">
+        <CardLayer
+          card={pitcher}
+          ringClass="ring-rose-400/40"
+          position={pitcherPos(focus)}
+        />
+        <CardLayer
+          card={batter}
+          ringClass="ring-sky-400/40"
+          position={batterPos(focus)}
+        />
+        {focus === "intro" && (
+          <motion.div
+            key="vs"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 320 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-zinc-100 text-3xl sm:text-4xl font-black tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
+          >
+            vs
+          </motion.div>
+        )}
       </div>
 
       <StatusLine
@@ -845,15 +957,7 @@ function SinglePlayLayout({
       />
 
       <div className="shrink-0 mt-2 flex items-center justify-center">
-        {showingPitcher ? (
-          <Dice
-            tone="pitcher"
-            status={pitchStatus}
-            value={pitchValue}
-            label={`+${pitcher.control}`}
-            onTap={playerCanPitch ? onTapPitch : undefined}
-          />
-        ) : (
+        {focus === "batter" ? (
           <Dice
             tone="batter"
             status={swingStatus}
@@ -861,9 +965,53 @@ function SinglePlayLayout({
             label={`OB ${batter.onBase}`}
             onTap={playerCanSwing ? onTapSwing : undefined}
           />
+        ) : (
+          <Dice
+            tone="pitcher"
+            status={pitchStatus}
+            value={pitchValue}
+            label={`+${pitcher.control}`}
+            onTap={playerCanPitch ? onTapPitch : undefined}
+          />
         )}
       </div>
     </div>
+  );
+}
+
+function CardLayer({
+  card,
+  ringClass,
+  position,
+}: {
+  card: CardType;
+  ringClass: string;
+  position: CardSlotPosition;
+}) {
+  return (
+    <motion.div
+      animate={{
+        left: position.left,
+        top: position.top,
+        width: position.width,
+        height: position.height,
+        opacity: position.opacity,
+        scale: position.scale,
+      }}
+      style={{ zIndex: position.zIndex }}
+      transition={CARD_SPRING}
+      className="absolute flex items-center justify-center"
+    >
+      <Image
+        src={`/cards/${card.id}.png`}
+        alt={card.name}
+        width={1488}
+        height={2079}
+        className={`block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4 ${ringClass}`}
+        sizes="90vw"
+        priority
+      />
+    </motion.div>
   );
 }
 
@@ -889,9 +1037,22 @@ function StatusLine({
   return (
     <div className="shrink-0 mt-2 h-12 flex flex-col items-center justify-center text-center">
       <AnimatePresence mode="wait">
-        {stage.kind === "idle" && (
+        {stage.kind === "intro" && (
           <motion.div
-            key="idle"
+            key="intro"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-xs sm:text-sm text-zinc-400"
+          >
+            <span className="text-rose-400">Ctrl {pitcher.control}</span>
+            <span className="text-zinc-600"> · </span>
+            <span className="text-sky-400">OB {batter.onBase}</span>
+          </motion.div>
+        )}
+        {stage.kind === "pitcher-ready" && (
+          <motion.div
+            key="pitcher-ready"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -915,10 +1076,43 @@ function StatusLine({
             …
           </motion.div>
         )}
-        {(stage.kind === "pitcher-settled" ||
-          stage.kind === "batter-settled") && (
+        {stage.kind === "pitcher-settled" && (
           <motion.div
-            key="settled"
+            key="pitcher-settled"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="space-y-0.5"
+          >
+            <div className="text-[11px] sm:text-xs text-zinc-400 font-mono">
+              <span className="text-zinc-200 font-bold text-base">
+                {stage.pitchRoll}
+              </span>{" "}
+              + {pitcher.control}
+              {fatigue > 0 && <span className="text-amber-400">−{fatigue}</span>}
+              {" = "}
+              <span className="text-zinc-100 font-bold">
+                {stage.pitchRoll + pitcher.control - fatigue}
+              </span>{" "}
+              vs OB {batter.onBase}
+            </div>
+            <div className="text-[11px] sm:text-xs font-bold">
+              <span
+                className={
+                  stage.advantage === "pitcher"
+                    ? "text-rose-400"
+                    : "text-sky-400"
+                }
+              >
+                {advantageHolder}
+              </span>{" "}
+              <span className="text-zinc-400 font-normal">advantage</span>
+            </div>
+          </motion.div>
+        )}
+        {stage.kind === "batter-ready" && (
+          <motion.div
+            key="batter-ready"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -937,26 +1131,7 @@ function StatusLine({
               <span className="text-zinc-400">advantage</span>
             </div>
             <div className="text-[10px] text-zinc-500">
-              {stage.pitchRoll}+{pitcher.control}
-              {fatigue > 0 && <span className="text-amber-400">−{fatigue}</span>}
-              ={stage.pitchRoll + pitcher.control - fatigue} vs OB{" "}
-              {batter.onBase}
-              {stage.kind === "pitcher-settled" && (
-                <>
-                  {" · "}
-                  {playerCanSwing ? "Tap blue die to swing" : "Opponent swings…"}
-                </>
-              )}
-              {stage.kind === "batter-settled" && (
-                <>
-                  {" · Swing "}
-                  <span className="font-bold text-zinc-200">
-                    {stage.swingRoll}
-                  </span>{" "}
-                  on{" "}
-                  {stage.advantage === "pitcher" ? "pitcher" : "batter"} chart…
-                </>
-              )}
+              {playerCanSwing ? "Tap blue die to swing" : "Opponent swings…"}
             </div>
           </motion.div>
         )}
@@ -969,6 +1144,23 @@ function StatusLine({
             className="text-xs sm:text-sm text-zinc-500"
           >
             …
+          </motion.div>
+        )}
+        {stage.kind === "batter-settled" && (
+          <motion.div
+            key="batter-settled"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="space-y-0.5"
+          >
+            <div className="text-[11px] sm:text-xs text-zinc-400 font-mono">
+              Swing{" "}
+              <span className="text-zinc-100 font-bold text-base">
+                {stage.swingRoll}
+              </span>{" "}
+              on {stage.advantage === "pitcher" ? "pitcher" : "batter"} chart…
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
