@@ -21,6 +21,7 @@ const awayTeam: Team = {
   divisionSlug: "test",
   colors: { primary: "#888", accent: "#aaa", light: "#ccc" },
   logos: { primary: "/logos/away/primary.png" },
+  flavor: "Test fixture team.",
   stadium: null,
 };
 const homeTeam: Team = {
@@ -30,6 +31,7 @@ const homeTeam: Team = {
   divisionSlug: "test",
   colors: { primary: "#888", accent: "#aaa", light: "#ccc" },
   logos: { primary: "/logos/home/primary.png" },
+  flavor: "Test fixture team.",
   stadium: null,
 };
 

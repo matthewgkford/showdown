@@ -1,9 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import cardsData from "@data/cards.json";
 import teamsData from "@data/teams.json";
 import type { BatterCard, Card as CardType, PitcherCard } from "@/types/card";
@@ -20,6 +27,7 @@ import {
 import {
   type Bases,
   type GameState,
+  type TeamSetup,
   applyAtBatOutcome,
   battingTeam,
   changePitcher,
@@ -31,6 +39,14 @@ import {
   pitcherFatigue,
   startGame,
 } from "@/lib/gameState";
+import {
+  getSeasonServerSnapshot,
+  getSeasonSnapshot,
+  recordPlayerGame,
+  subscribe,
+} from "@/lib/season";
+import { getEffectiveRoster } from "@/lib/rosters";
+import { getTeamBySlug } from "@/lib/teams";
 import { DICE_TUMBLE_MS, Dice } from "@/components/Dice";
 import { BaseDiamond } from "@/components/BaseDiamond";
 import { Scoreboard } from "@/components/Scoreboard";
@@ -78,9 +94,117 @@ type Phase =
   | { kind: "setup" }
   | { kind: "playing"; game: GameState };
 
+type SeasonContext = {
+  round: number;
+  awaySlug: string;
+  homeSlug: string;
+};
+
 export default function GamePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-[100dvh] flex items-center justify-center bg-zinc-950 text-zinc-100">
+          <p className="text-sm text-zinc-500">Loading…</p>
+        </main>
+      }
+    >
+      <GamePageInner />
+    </Suspense>
+  );
+}
+
+function GamePageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const season = useSyncExternalStore(
+    subscribe,
+    getSeasonSnapshot,
+    getSeasonServerSnapshot,
+  );
+
+  const seasonCtx: SeasonContext | null = useMemo(() => {
+    if (searchParams.get("season") !== "1") return null;
+    const round = Number(searchParams.get("round"));
+    const awaySlug = searchParams.get("away");
+    const homeSlug = searchParams.get("home");
+    if (!round || !awaySlug || !homeSlug) return null;
+    return { round, awaySlug, homeSlug };
+  }, [searchParams]);
+
+  // For season matchups, derive the game state directly from URL + season
+  // snapshot. Each team's roster comes from data/rosters.json with the
+  // opponent's stats scaled by the current league tier (player's roster
+  // never scales). Returns null while season state is hydrating.
+  const seasonGame = useMemo<GameState | null>(() => {
+    if (!seasonCtx || !season) return null;
+    const entry = season.schedule.find(
+      (g) =>
+        g.round === seasonCtx.round &&
+        g.awaySlug === seasonCtx.awaySlug &&
+        g.homeSlug === seasonCtx.homeSlug,
+    );
+    if (!entry || entry.result !== null) return null;
+    return buildSeasonGame(
+      seasonCtx.awaySlug,
+      seasonCtx.homeSlug,
+      season.playerTeamSlug,
+      season.currentLeagueTier,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seasonCtx]);
+  // Note: we intentionally don't depend on `season` here. After
+  // recordPlayerGame() the schedule entry will have a result and this
+  // memo would re-evaluate to null mid-game. Computing the initial game
+  // state once when the user lands on /game?season=1&… is what we want;
+  // Play owns its own internal game state from there.
+
+  // Exhibition setup state — only used outside season mode.
   const [phase, setPhase] = useState<Phase>({ kind: "setup" });
 
+  // Season mode: bounce back to /season if the schedule entry is missing,
+  // already played, or rosters fail to resolve. This is the only side
+  // effect — initial game state lives in the memo above.
+  useEffect(() => {
+    if (!seasonCtx) return;
+    if (!season) return;
+    if (seasonGame === null) {
+      router.replace("/season");
+    }
+  }, [seasonCtx, season, seasonGame, router]);
+
+  if (seasonCtx) {
+    if (!season || !seasonGame) {
+      return (
+        <main className="min-h-[100dvh] flex items-center justify-center bg-zinc-950 text-zinc-100">
+          <p className="text-sm text-zinc-500">Loading matchup…</p>
+        </main>
+      );
+    }
+    return (
+      <Play
+        initial={seasonGame}
+        onEnd={(final) => {
+          const over = checkGameOver(final);
+          if (over) {
+            recordPlayerGame(
+              seasonCtx.awaySlug,
+              seasonCtx.homeSlug,
+              seasonCtx.round,
+              {
+                awayRuns: final.away.runs,
+                homeRuns: final.home.runs,
+                winner: over.winner,
+              },
+            );
+          }
+          router.push("/season");
+        }}
+      />
+    );
+  }
+
+  // Exhibition mode (no season query params).
   if (phase.kind === "setup") {
     return (
       <Setup
@@ -104,6 +228,49 @@ export default function GamePage() {
       onEnd={() => setPhase({ kind: "setup" })}
     />
   );
+}
+
+// Construct the GameState for a season matchup: pull each team's roster
+// from data/rosters.json, apply the league powerLevel multiplier to the
+// opponent only (the player's own roster never scales — they grow
+// stronger by collecting better cards from packs), and hand it to the
+// existing engine. Bench is empty since season rosters are 13 cards
+// (9 batters + 1 SP + 3 RP, no bench).
+function buildSeasonGame(
+  awaySlug: string,
+  homeSlug: string,
+  playerSlug: string,
+  currentTier: number,
+): GameState | null {
+  const awayTeam = getTeamBySlug(awaySlug);
+  const homeTeam = getTeamBySlug(homeSlug);
+  if (!awayTeam || !homeTeam) return null;
+
+  const awayRoster = getEffectiveRoster(
+    awaySlug,
+    awaySlug === playerSlug ? 1 : currentTier,
+  );
+  const homeRoster = getEffectiveRoster(
+    homeSlug,
+    homeSlug === playerSlug ? 1 : currentTier,
+  );
+  if (!awayRoster || !homeRoster) return null;
+
+  const awaySetup: TeamSetup = {
+    team: awayTeam,
+    lineup: awayRoster.batters,
+    bench: [],
+    pitcher: awayRoster.startingPitcher,
+    bullpen: awayRoster.relievers,
+  };
+  const homeSetup: TeamSetup = {
+    team: homeTeam,
+    lineup: homeRoster.batters,
+    bench: [],
+    pitcher: homeRoster.startingPitcher,
+    bullpen: homeRoster.relievers,
+  };
+  return startGame(awaySetup, homeSetup);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,7 +425,7 @@ function Play({
   onEnd,
 }: {
   initial: GameState;
-  onEnd: () => void;
+  onEnd: (final: GameState) => void;
 }) {
   const [game, setGame] = useState<GameState>(initial);
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
@@ -347,7 +514,10 @@ function Play({
   return (
     <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-3 sm:px-6 sm:py-4">
       <header className="shrink-0 mb-2 flex items-center gap-3">
-        <button onClick={onEnd} className="text-xs text-zinc-500 hover:text-zinc-200">
+        <button
+          onClick={() => onEnd(game)}
+          className="text-xs text-zinc-500 hover:text-zinc-200"
+        >
           End
         </button>
         <div className="flex-1 min-w-0">
@@ -385,7 +555,7 @@ function Play({
           outcome={stage.outcome}
           justBatted={stage.justBatted}
           onNext={nextBatter}
-          onPlayAgain={onEnd}
+          onPlayAgain={() => onEnd(game)}
         />
       ) : (
         <>

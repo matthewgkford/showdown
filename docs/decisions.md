@@ -182,3 +182,27 @@ The "good card" is sourced from a reward pool defined as cards not already in an
 **Reasoning**: One unified persistence story across Phase 7 (collection, packs) and Phase 8 (season). All accessors go through `lib/season.ts`, so a future backend swap touches one file.
 
 ---
+
+## 2026-05-04: Schedule = full 90-game double round-robin, not just player view (Phase 8 Stage 4)
+
+**Decision**: `generateSchedule()` produces all 90 canonical games for the league (10 teams × double round-robin = 18 rounds × 5 games), not just the 18 the player participates in. SeasonState stores the entire 90-game array; the player view is filtered out as needed. Algorithm is the classic circle method with a second cycle of home/away flips, fully deterministic.
+
+**Reasoning**: For division standings to mean anything, every team needs a real W-L record — which requires simulating the 72 background games. Storing the full schedule (with results filled in over time) keeps the season state self-contained: standings are a pure walk over the schedule, no parallel "league sim" structure.
+
+---
+
+## 2026-05-04: Auto-simulate non-player games on round advance (Phase 8 Stage 4)
+
+**Decision**: When the player completes their round-N game (via the live UI), we synchronously auto-simulate every other unplayed round-N matchup using a headless wrapper around the same engine (`lib/gameSimulator.ts`). Then the round is "closed" and the standings update.
+
+**Reasoning**: Players see realistic standings movement after every game without sitting through 4 sim animations. Using the real engine (not a coin flip with a bias) means simulated games feel consistent with player-played ones — same fatigue, same chart swings. The simulator runs ~80 at-bats per game and finishes in milliseconds, so it's fine to do inline on the result-recording call.
+
+---
+
+## 2026-05-04: Player roster never scales by powerLevel (Phase 8 Stage 4)
+
+**Decision**: When constructing season matchups in `app/game/page.tsx`, the player's effective roster is always fetched at tier 1 (no scaling), regardless of which league tier they're competing in. Only the opponent gets scaled by the current tier's `powerLevel`.
+
+**Reasoning**: Reinforces the design intent from Stage 1 — players grow stronger by collecting better cards from packs (rewards), not by automatic stat inflation. If the player's roster scaled along with opponents, tier progression would be invisible: the relative balance never changes. By holding the player constant, climbing tiers genuinely feels harder, and pack rewards are what bridges the gap.
+
+---
