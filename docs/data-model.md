@@ -251,3 +251,65 @@ type PitcherCard = BaseCard & {
 
 type Card = BatterCard | PitcherCard;
 ```
+
+---
+
+## Collection & packs (Phase 7)
+
+The collection system layers on top of the card model. Cards themselves don't change; the new types describe what a player owns and which packs are available to them.
+
+### Rarity
+
+Rarity is **derived** from `card.points`, not stored on the card. See `lib/rarity.ts`:
+
+| Tier | Points |
+|---|---|
+| `common` | < 400 |
+| `uncommon` | 400–499 |
+| `rare` | 500–599 |
+| `legendary` | ≥ 600 |
+
+```typescript
+type Rarity = "common" | "uncommon" | "rare" | "legendary";
+```
+
+### Pack
+
+```typescript
+type Pack = {
+  id: string;            // e.g. "bronx-dynasty"
+  name: string;          // "Bronx Dynasty"
+  description: string;
+  accentColor: string;   // hex, used for tile + reveal accents
+  cardIds: string[];     // ids referencing data/cards.json
+};
+```
+
+Packs live in `data/packs.json`. They're hand-curated — every pack always grants exactly the listed cards. The order in `cardIds` is irrelevant; the reveal sequence is computed by `sortForReveal` (ascending rarity, ties by points ascending).
+
+### Collection state (persisted)
+
+Stored in `localStorage` under two keys:
+
+```typescript
+// localStorage: "showdown:collection"
+type CollectionState = {
+  cards: Record<string, number>;   // cardId → number of copies owned
+};
+
+// localStorage: "showdown:packs"
+type PacksInventory = {
+  packs: Record<string, number>;   // packId → number of unopened copies
+};
+```
+
+Duplicates are tracked as a count rather than as separate entries. The collection grid uses the count for the "(×N)" badge.
+
+All accessors are SSR-safe (`typeof window === "undefined"` guards) and live in `lib/collection.ts`:
+
+- `getCollection()`, `addToCollection(cardIds[])`, `resetCollection()`
+- `getOwnedPacks()`, `consumePack(packId)`, `grantPack(packId)`, `grantPacks(packIds[])`, `resetPacks()`
+
+### Migration to a backend later
+
+When v2 needs cross-device sync, replace the `safeLoad` / `safeSave` helpers in `lib/collection.ts` with authenticated fetch calls to a backend that exposes the same shapes. Nothing else in the app reads localStorage directly; every consumer goes through these accessors. Persisting both keys server-side is the entire migration.

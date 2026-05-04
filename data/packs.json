@@ -1,0 +1,54 @@
+[
+  {
+    "id": "bronx-dynasty",
+    "name": "Bronx Dynasty",
+    "description": "Five core Yankees from the championship years.",
+    "accentColor": "#1d4ed8",
+    "cardIds": [
+      "clemens-nyy",
+      "pettitte-nyy",
+      "jeter-nyy",
+      "bernie-nyy",
+      "posada-nyy"
+    ]
+  },
+  {
+    "id": "aces",
+    "name": "Aces",
+    "description": "Top-of-the-rotation arms, headlined by Pedro.",
+    "accentColor": "#ca8a04",
+    "cardIds": [
+      "randy-johnson-ari",
+      "schilling-ari",
+      "zito-oak",
+      "maddux-atl",
+      "pedro-bos"
+    ]
+  },
+  {
+    "id": "power-hitters",
+    "name": "Power Hitters",
+    "description": "Five sluggers — Bonds, A-Rod, and friends.",
+    "accentColor": "#dc2626",
+    "cardIds": [
+      "frank-thomas-chw",
+      "sosa-chc",
+      "delgado-tor",
+      "arod-tex",
+      "bonds-sf"
+    ]
+  },
+  {
+    "id": "stars-of-01",
+    "name": "Stars of '01",
+    "description": "A mixed bag of marquee names from across the league.",
+    "accentColor": "#9333ea",
+    "cardIds": [
+      "lindor-2025-nym",
+      "ichiro-sea",
+      "vlad-mon",
+      "sheffield-lad",
+      "manny-cle"
+    ]
+  }
+]

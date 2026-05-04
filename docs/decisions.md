@@ -59,3 +59,46 @@ Running log of design decisions made during development. Entry format: date, dec
 **Reasoning**: The advanced rules give players icon-based abilities (e.g., MVP allows rerolling out results twice per game). These add real complexity to the game engine and require UI for triggering them. Per the rulebook, expert rules tie icons to strategy cards instead. Cleaner to ship v1 without and add either system later. Field is reserved on the data model to avoid migration.
 
 ---
+
+## 2026-05-04: Curated themed packs over random pools (Phase 7)
+
+**Decision**: Each pack is hand-defined in `data/packs.json` with a fixed list of card IDs. Opening a pack always grants exactly those cards. No randomization, no probability tables.
+
+**Reasoning**: The card pool is small enough (29 cards) that random draws would feel arbitrary and would leak which cards are common vs. rare via repetition. Curated packs let us choreograph the reveal — every "Aces" pack ends on Pedro, every "Power Hitters" pack ends on Bonds — so the rhythm of the open is consistent and the climax is real. Random pools become interesting only at scale; we'll revisit when the card pool reaches the hundreds.
+
+---
+
+## 2026-05-04: Collection state in localStorage for v1
+
+**Decision**: Owned cards and unopened packs are persisted to `localStorage` under the `showdown:collection` and `showdown:packs` keys. No backend, no auth, no sync across devices.
+
+**Reasoning**: Same logic as cards/teams in JSON files — solving infrastructure problems we don't have yet. localStorage is per-browser, free, and instantly debuggable from the dev tools. Migrating to a real DB later is straightforward: the access layer is `lib/collection.ts`; swap the safe-load/safe-save helpers for fetch calls and the rest of the app is unchanged. Schema is documented in `docs/data-model.md` so the migration shape is locked in.
+
+---
+
+## 2026-05-04: Rarity tiers derived from points (Phase 7)
+
+**Decision**: Card rarity is computed purely from `points`, not stored on the card itself.
+
+- **Common**: < 400 pts
+- **Uncommon**: 400–499 pts
+- **Rare**: 500–599 pts
+- **Legendary**: ≥ 600 pts
+
+The bands live in `lib/rarity.ts` (`POINTS_BANDS`) and the rest of the app derives rarity via `getCardRarity(card)`.
+
+**Reasoning**: Showdown points already encode card "value" — they're the budgeting cost for team-building. Re-using them as the rarity signal means every new card is automatically classified, no per-card metadata to maintain. Bands chosen so the seeded pool (29 cards, 320–700 pts) lands at roughly 17/45/24/14% common/uncommon/rare/legendary, putting the four 600+ cards (Delgado, A-Rod, Bonds, Pedro) into the "money pull" tier.
+
+To tune later: edit `POINTS_BANDS` in `lib/rarity.ts`. Nothing else needs to change.
+
+---
+
+## 2026-05-04: Pack reveal in ascending rarity order (Phase 7)
+
+**Decision**: When a pack is opened, the cards are revealed in ascending rarity order (commons first, legendary last). Ties are broken by points ascending so the highest-points card in the rarest tier is always the climactic last reveal.
+
+**Reasoning**: The MLB The Show pack-opening rhythm depends on anticipation building toward the final card. If you reveal the legendary first, the rest of the pack is anticlimactic; if you reveal randomly, the pacing is inconsistent across packs. Ordering deterministically by rarity then points means *every* pack has a clear climax — the user learns the rhythm, and the question becomes "is the last card a rare or a legendary?" which is the right tension to keep alive across packs.
+
+The sort lives in `lib/rarity.ts` (`sortForReveal`); pack JSON can list cards in any order.
+
+---
