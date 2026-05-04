@@ -27,6 +27,9 @@ export type Team = {
   divisionSlug: string;
   colors: TeamColors;
   logos: TeamLogos;
+  // 1-2 sentences of personality. Shown on the choose-team confirm
+  // screen and reusable on the future season dashboard.
+  flavor: string;
   // Stadium name. Null for v1 — populate in a later phase.
   stadium: string | null;
 };

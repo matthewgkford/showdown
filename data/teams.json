@@ -6,6 +6,7 @@
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1F2A44", "accent": "#C9A878", "light": "#F5EDD8" },
     "logos": { "primary": "/logos/bagels/primary.png" },
+    "flavor": "Pinstripes, posture, and a team that takes itself dead seriously despite the name. The Turnpike's gold standard.",
     "stadium": null
   },
   {
@@ -15,6 +16,7 @@
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1E3035", "accent": "#7A2A2A", "light": "#D4B47C" },
     "logos": { "primary": "/logos/pepperoni-slices/primary.png" },
+    "flavor": "Old-school pizzeria neon and red sauce on the cleats. The natural-born nemesis of the Bagels.",
     "stadium": null
   },
   {
@@ -24,6 +26,7 @@
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1A1F2E", "accent": "#E8B547", "light": "#F2EAD6" },
     "logos": { "primary": "/logos/skylinders/primary.png" },
+    "flavor": "Plays at the overlook with the Manhattan skyline behind them. Dignified, scenic, very particular about the view.",
     "stadium": null
   },
   {
@@ -33,6 +36,7 @@
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1A1815", "accent": "#D67D2C", "light": "#EFE4C8" },
     "logos": { "primary": "/logos/lincoln-tunnellers/primary.png" },
+    "flavor": "Vintage 1937 commuter team — sodium-light glow, tile cream, the smell of exhaust and coffee. Wins on grit.",
     "stadium": null
   },
   {
@@ -42,6 +46,7 @@
     "divisionSlug": "turnpike",
     "colors": { "primary": "#0E5D3A", "accent": "#F2C94C", "light": "#F4F1E4" },
     "logos": { "primary": "/logos/parkways/primary.png" },
+    "flavor": "Modern, civic, sans-serif. The highway-sign team in a league of personalities.",
     "stadium": null
   },
   {
@@ -51,6 +56,7 @@
     "divisionSlug": "garden-state",
     "colors": { "primary": "#3D2B5E", "accent": "#E8893E", "light": "#F5EDD8" },
     "logos": { "primary": "/logos/mischief-nighters/primary.png" },
+    "flavor": "Suburban Halloween-eve mischief. Spooky-cute autumn Americana — the team that toilet-papers your ace.",
     "stadium": null
   },
   {
@@ -60,6 +66,7 @@
     "divisionSlug": "garden-state",
     "colors": { "primary": "#1A1A1A", "accent": "#FF2E63", "light": "#FBF4E4" },
     "logos": { "primary": "/logos/diner-rats/primary.png" },
+    "flavor": "2am at the 24-hour diner. Scrappy, urban, late-night, fueled by disco fries and bad decisions.",
     "stadium": null
   },
   {
@@ -69,6 +76,7 @@
     "divisionSlug": "garden-state",
     "colors": { "primary": "#3E7C8B", "accent": "#D85A4A", "light": "#F5EBD6" },
     "logos": { "primary": "/logos/boardwalk-bandits/primary.png" },
+    "flavor": "Sun-faded shore vibes. Mascot is a seagull who steals your fries the moment you look down at the box score.",
     "stadium": null
   },
   {
@@ -78,6 +86,7 @@
     "divisionSlug": "garden-state",
     "colors": { "primary": "#1A1A1A", "accent": "#E8B23B", "light": "#F2E8D0" },
     "logos": { "primary": "/logos/rippers/primary.png" },
+    "flavor": "Working-class roadside team named after Rutt's Hut deep-fried hot dogs. Wins ugly, doesn't apologize.",
     "stadium": null
   },
   {
@@ -87,6 +96,7 @@
     "divisionSlug": "garden-state",
     "colors": { "primary": "#1C1C1C", "accent": "#3C5A5E", "light": "#EDE6D6" },
     "logos": { "primary": "/logos/meadowlands/primary.png" },
+    "flavor": "Industrial swampland gravitas. The atmospheric heavyweight — fog, neon, exit-ramp menace.",
     "stadium": null
   }
 ]

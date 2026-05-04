@@ -54,9 +54,15 @@ export default function Home() {
             </Link>
             <Link
               href="/game"
+              className="rounded-full border border-zinc-700 px-3 py-2 text-xs sm:text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+            >
+              Exhibition
+            </Link>
+            <Link
+              href="/choose-team"
               className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-400"
             >
-              New game →
+              Season →
             </Link>
           </div>
         </header>
