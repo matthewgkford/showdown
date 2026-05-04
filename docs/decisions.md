@@ -127,6 +127,16 @@ The sort lives in `lib/rarity.ts` (`sortForReveal`); pack JSON can list cards in
 
 ---
 
+## 2026-05-04: Starter rosters use no legendaries, limited rares (Phase 8)
+
+**Decision**: Starter rosters draw only from common + uncommon cards plus the 10 lowest-point rare batters and 5 lowest-point rare starters needed to fill the slot count. Every legendary card and every "good" rare card stays out of starter rosters and lives in the reward pool that pack rewards draw from. Average starter roster total is ~4,881 pts (vs. ~6,224 if every card were eligible); the 51-card reward pool covers all 25 legendaries + 26 unused rares.
+
+**Reasoning**: If every team starts with Babe Ruth and Pedro Martinez, pack rewards feel pointless — there's nowhere meaningful to upgrade. Anchoring starter rosters to commons/uncommons (with a few low rares as fill-in) means every legendary or strong rare you pull from a pack is a tangible improvement to your lineup. The 21.6% average roster gap between starter level and the full card pool is the headroom the player closes over a season.
+
+The "10 lowest-point rare batters" and "5 lowest-point rare starters" are chosen mechanically — when the starter pool runs short on a slot type, take the cheapest cards from the next tier up rather than dipping anywhere. Keeps the boundary clean.
+
+---
+
 ## 2026-05-04: League tier architecture + powerLevel multiplier (Phase 8)
 
 **Decision**: The league ladder is defined in `data/leagues.json` as tiered entries (`tier: number`, `powerLevel: number`). v1 only ships `tier: 1` (Single-A, powerLevel 1.0) as playable; `tier: 2` (Double-A, powerLevel 1.4) is a stub. Promotion = win-division. The same `data/rosters.json` is reused across tiers — at tier N, opponent rosters are passed through `applyPowerLevel(card, league.powerLevel)` which scales batter `onBase` and pitcher `control` by the multiplier.
