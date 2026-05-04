@@ -1280,22 +1280,23 @@ function FieldView({
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-2">
       <motion.div
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
         className="text-center shrink-0"
       >
-        <div
-          className={`text-2xl sm:text-3xl font-bold tracking-tight ${
-            isOut(outcome) ? "text-rose-400" : "text-emerald-400"
-          }`}
-        >
-          {outcomeLabel(outcome).toUpperCase()}
+        {/* Compact label up top — the field animation does the heavy
+            lifting visually now. */}
+        <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.25em] text-zinc-400">
+          <span className={isOut(outcome) ? "text-rose-300" : "text-emerald-300"}>
+            {outcomeLabel(outcome)}
+          </span>
+          <span className="text-zinc-600"> · </span>
+          <span>{justBatted.name}</span>
         </div>
-        <div className="text-xs sm:text-sm text-zinc-400">{justBatted.name}</div>
         {halfEnded && !gameOver && (
           <div
-            className={`mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wider ${
+            className={`mt-1 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.25em] ${
               game.inning >= 10 ? "text-amber-400" : "text-rose-400"
             }`}
           >
@@ -1304,7 +1305,7 @@ function FieldView({
         )}
       </motion.div>
 
-      <Field runners={visible} />
+      <Field runners={visible} outcome={outcome} />
 
       {isAnimating ? (
         <div className="h-10" aria-hidden />
@@ -1386,7 +1387,13 @@ function FinalScore({
   );
 }
 
-function Field({ runners }: { runners: RunnerSnapshot[] }) {
+function Field({
+  runners,
+  outcome,
+}: {
+  runners: RunnerSnapshot[];
+  outcome: Outcome;
+}) {
   return (
     <div className="relative aspect-square w-full max-w-[min(70vh,420px)]">
       <svg
@@ -1412,7 +1419,18 @@ function Field({ runners }: { runners: RunnerSnapshot[] }) {
           transform="rotate(45 50 89)"
           fill="rgba(255,255,255,0.35)"
         />
+
+        {/* Outcome trajectory: lives inside the same viewBox so coords
+            line up perfectly with the diamond. */}
+        <OutcomeTrajectory outcome={outcome} />
       </svg>
+
+      {/* Big animated label sitting on top of the diamond — K for a
+          strikeout, GONE! for a homer, etc. Uses HTML so the type
+          rendering is crisp and easy to style. */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <OutcomeBadge outcome={outcome} />
+      </div>
 
       <AnimatePresence>
         {runners.map((r) => (
@@ -1421,6 +1439,159 @@ function Field({ runners }: { runners: RunnerSnapshot[] }) {
       </AnimatePresence>
     </div>
   );
+}
+
+// Trajectory paths drawn within the diamond's viewBox.
+//
+// Coordinates: the diamond is 100×100 with home plate at (50,88), 1st
+// base at (88,50), 2nd at (50,12), 3rd at (12,50). Smaller y-values =
+// "deeper" outfield. Paths start at home and curve outward, with shape
+// chosen to evoke each outcome — short arcs for outs, long sweeping
+// arcs for hits, a near-straight rocket for a homer.
+const TRAJECTORIES: Partial<
+  Record<Outcome, { paths: string[]; duration: number; segDelay?: number }>
+> = {
+  single: { paths: ["M 50 88 Q 65 60 75 38"], duration: 0.65 },
+  singlePlus: { paths: ["M 50 88 Q 70 55 82 32"], duration: 0.7 },
+  double: { paths: ["M 50 88 Q 72 38 88 16"], duration: 0.85 },
+  triple: { paths: ["M 50 88 Q 30 38 12 12"], duration: 1.0 },
+  homer: { paths: ["M 50 88 Q 50 35 50 -20"], duration: 1.0 },
+  // Ground out: a chopper to short, then the throw to first.
+  gb: {
+    paths: ["M 50 88 L 32 64", "M 32 64 L 84 50"],
+    duration: 0.42,
+    segDelay: 0.42,
+  },
+  // Fly ball: a long arc up and out to a fielder.
+  fb: { paths: ["M 50 88 Q 50 22 70 38"], duration: 0.95 },
+  // Pop up: brief lazy arc dying near home plate.
+  pu: { paths: ["M 50 88 Q 50 65 56 80"], duration: 0.55 },
+};
+
+function OutcomeTrajectory({ outcome }: { outcome: Outcome }) {
+  const cfg = TRAJECTORIES[outcome];
+  if (!cfg) return null;
+
+  const isHit =
+    outcome === "single" ||
+    outcome === "singlePlus" ||
+    outcome === "double" ||
+    outcome === "triple" ||
+    outcome === "homer";
+  const stroke = isHit ? "#10b981" : "#fb7185";
+
+  return (
+    <g>
+      {cfg.paths.map((d, i) => (
+        <motion.path
+          key={i}
+          d={d}
+          stroke={stroke}
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          fill="none"
+          initial={{ pathLength: 0, opacity: 0.95 }}
+          animate={{ pathLength: 1 }}
+          transition={{
+            pathLength: {
+              duration: cfg.duration,
+              delay: i * (cfg.segDelay ?? 0),
+              ease: "easeOut",
+            },
+          }}
+          style={{
+            filter: `drop-shadow(0 0 4px ${stroke}80)`,
+          }}
+        />
+      ))}
+    </g>
+  );
+}
+
+// Big text overlay sitting on top of the diamond. Most plays get nothing
+// (the trajectory speaks for itself); the dramatic ones get a stamped
+// callout — K for strikeout, GONE! for homer, OUT for routine outs, BB
+// for a walk.
+function OutcomeBadge({ outcome }: { outcome: Outcome }) {
+  if (outcome === "so") {
+    return (
+      <motion.div
+        key="K"
+        initial={{ scale: 0, rotate: -25, opacity: 0 }}
+        animate={{
+          scale: [0, 1.25, 1, 1.04, 1],
+          rotate: [-25, 8, 0, -3, 0],
+          opacity: 1,
+        }}
+        transition={{
+          duration: 0.75,
+          ease: "easeOut",
+          times: [0, 0.4, 0.6, 0.85, 1],
+        }}
+        className="font-black text-rose-500 leading-none"
+        style={{
+          fontSize: "min(40vw, 18rem)",
+          textShadow:
+            "0 4px 24px rgba(244,63,94,0.55), 0 0 4px rgba(0,0,0,0.6)",
+        }}
+      >
+        K
+      </motion.div>
+    );
+  }
+
+  if (outcome === "homer") {
+    return (
+      <motion.div
+        key="HR"
+        initial={{ scale: 0, y: 30, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        transition={{
+          delay: 0.85,
+          type: "spring",
+          stiffness: 240,
+          damping: 14,
+        }}
+        className="rounded-full bg-emerald-500/90 px-4 py-2 text-sm sm:text-base font-black uppercase tracking-[0.3em] text-zinc-950 shadow-lg shadow-emerald-500/40"
+      >
+        Gone!
+      </motion.div>
+    );
+  }
+
+  if (outcome === "bb") {
+    return (
+      <motion.div
+        key="BB"
+        initial={{ y: -16, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="rounded-full bg-amber-400/90 px-3 py-1.5 text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-zinc-950"
+      >
+        Walk
+      </motion.div>
+    );
+  }
+
+  if (outcome === "gb" || outcome === "fb" || outcome === "pu") {
+    return (
+      <motion.div
+        key="OUT"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [0, 1.15, 1], opacity: 1 }}
+        transition={{
+          delay: outcome === "gb" ? 0.85 : 0.7,
+          duration: 0.4,
+          ease: "easeOut",
+        }}
+        className="rounded-full bg-rose-500/90 px-3 py-1.5 text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-white"
+      >
+        Out
+      </motion.div>
+    );
+  }
+
+  return null;
 }
 
 function BaseSquare({
