@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import Link from "next/link";
 import cardsData from "@data/cards.json";
 import { Card } from "@/components/Card";
@@ -7,19 +5,14 @@ import type { Card as CardType, BatterCard, PitcherCard } from "@/types/card";
 
 const cards = cardsData as CardType[];
 
-function loadAvailableImages(): Set<string> {
-  const dir = path.join(process.cwd(), "public", "cards");
-  if (!fs.existsSync(dir)) return new Set();
-  return new Set(
-    fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith(".png"))
-      .map((f) => f.replace(/\.png$/, "")),
-  );
-}
+// Every card in cards.json now has a corresponding PNG in public/cards/.
+// We used to fs.readdirSync that directory at render time to filter, but
+// that pulled all 271 MB of card art into the Vercel function bundle and
+// blew the 300 MB limit. Since the placeholder fallback is unused in
+// practice, we just always render the image.
+const HAS_IMAGE = true;
 
 export default function Home() {
-  const haveImages = loadAvailableImages();
   const batters = cards.filter((c): c is BatterCard => c.cardType === "batter");
   const pitchers = cards.filter((c): c is PitcherCard => c.cardType === "pitcher");
 
@@ -70,7 +63,7 @@ export default function Home() {
         <Section title="Batters" count={batters.length}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {batters.map((c) => (
-              <Card key={c.id} card={c} hasImage={haveImages.has(c.id)} />
+              <Card key={c.id} card={c} hasImage={HAS_IMAGE} />
             ))}
           </div>
         </Section>
@@ -78,7 +71,7 @@ export default function Home() {
         <Section title="Pitchers" count={pitchers.length}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {pitchers.map((c) => (
-              <Card key={c.id} card={c} hasImage={haveImages.has(c.id)} />
+              <Card key={c.id} card={c} hasImage={HAS_IMAGE} />
             ))}
           </div>
         </Section>
