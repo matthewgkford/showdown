@@ -14,7 +14,7 @@
     "name": "Pepperoni Slices",
     "shortName": "PEP",
     "divisionSlug": "turnpike",
-    "colors": { "primary": "#1E3035", "accent": "#7A2A2A", "light": "#D4B47C" },
+    "colors": { "primary": "#074345", "accent": "#7A2A2A", "light": "#D4B47C" },
     "logos": { "primary": "/logos/pepperoni-slices/primary.png" },
     "flavor": "Old-school pizzeria neon and red sauce on the cleats. The natural-born nemesis of the Bagels.",
     "stadium": null
