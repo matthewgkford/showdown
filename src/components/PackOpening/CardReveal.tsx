@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
 import type { Card } from "@/types/card";
-import type { Pack } from "@/types/collection";
+import type { Pack, Rarity } from "@/types/collection";
+import { FlipBurst, LegendaryHolo, RarityGlow } from "./effects";
 
 const CARD_W = 1488;
 const CARD_H = 2079;
@@ -16,55 +18,107 @@ const CARD_ASPECT = CARD_W / CARD_H;
 //
 // `size` is the card's pixel width; height is derived from the card aspect
 // so the same component works at row scale (small) and centre scale (big).
+//
+// Optional polish:
+// - `rarity` + `showGlow`: pulse a rarity-coloured halo behind the card
+//   (Stage 3 — the "is that gold?" moment before the flip).
+// - `rarity` + `triggerBurst`: fire a one-shot expanding burst when the
+//   flip completes for rare/legendary pulls.
+//
+// Reduced-motion users get a plain front/back swap instead of the 3D
+// rotation.
 export function CardReveal({
   card,
   pack,
   faceup,
   size,
+  rarity,
+  showGlow = false,
 }: {
   card: Card;
   pack: Pack;
   faceup: boolean;
   size: number;
+  rarity?: Rarity;
+  showGlow?: boolean;
 }) {
+  const reduced = useReducedMotion();
   const w = size;
   const h = size / CARD_ASPECT;
+  const [burstKey, setBurstKey] = useState(0);
 
   return (
     <div
       style={{ width: w, height: h, perspective: 1200 }}
-      className="select-none"
+      className="relative select-none"
     >
-      <motion.div
-        className="relative w-full h-full"
-        style={{ transformStyle: "preserve-3d" }}
-        animate={{ rotateY: faceup ? 180 : 0 }}
-        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-      >
-        <div
-          className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50"
-          style={{ backfaceVisibility: "hidden" }}
-        >
-          <CardBack pack={pack} size={size} />
+      {showGlow && rarity && <RarityGlow rarity={rarity} />}
+      {showGlow && rarity === "legendary" && <LegendaryHolo active />}
+
+      {reduced ? (
+        // Reduced motion: no 3D flip; just swap face-down ↔ face-up.
+        <div className="relative w-full h-full">
+          <div
+            className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50 transition-opacity duration-300"
+            style={{ opacity: faceup ? 0 : 1 }}
+          >
+            <CardBack pack={pack} size={size} />
+          </div>
+          <div
+            className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50 transition-opacity duration-300"
+            style={{ opacity: faceup ? 1 : 0 }}
+          >
+            <Image
+              src={`/cards/${card.id}.png`}
+              alt={card.name}
+              width={CARD_W}
+              height={CARD_H}
+              className="block w-full h-full object-cover"
+              sizes={`${Math.ceil(size * 2)}px`}
+              priority
+            />
+          </div>
         </div>
-        <div
-          className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
+      ) : (
+        <motion.div
+          className="relative w-full h-full"
+          style={{ transformStyle: "preserve-3d" }}
+          animate={{ rotateY: faceup ? 180 : 0 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          onAnimationComplete={() => {
+            if (faceup && (rarity === "rare" || rarity === "legendary")) {
+              setBurstKey((k) => k + 1);
+            }
           }}
         >
-          <Image
-            src={`/cards/${card.id}.png`}
-            alt={card.name}
-            width={CARD_W}
-            height={CARD_H}
-            className="block w-full h-full object-cover"
-            sizes={`${Math.ceil(size * 2)}px`}
-            priority
-          />
-        </div>
-      </motion.div>
+          <div
+            className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50"
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            <CardBack pack={pack} size={size} />
+          </div>
+          <div
+            className="absolute inset-0 rounded-lg overflow-hidden shadow-md shadow-black/50"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+            }}
+          >
+            <Image
+              src={`/cards/${card.id}.png`}
+              alt={card.name}
+              width={CARD_W}
+              height={CARD_H}
+              className="block w-full h-full object-cover"
+              sizes={`${Math.ceil(size * 2)}px`}
+              priority
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Burst plays on rarity-tier flip-complete; key remount replays it. */}
+      {burstKey > 0 && rarity && <FlipBurst key={burstKey} rarity={rarity} />}
     </div>
   );
 }

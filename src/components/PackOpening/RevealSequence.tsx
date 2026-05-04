@@ -1,23 +1,32 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import type { Card } from "@/types/card";
-import type { Pack } from "@/types/collection";
+import type { Pack, Rarity } from "@/types/collection";
+import { getCardRarity } from "@/lib/rarity";
 import { CardReveal } from "./CardReveal";
 
-// Pixel widths. Heights are derived inside CardReveal from the card aspect.
 const ROW_CARD_W = 60;
 const CENTER_CARD_W = 240;
+const HERO_CARD_W = 240;
+const SUPPORTING_CARD_W = 56;
 
 // Time the card takes to fly from row to centre before we auto-flip it.
 // Should be ~= the framer-motion layout transition duration.
 const ARRIVE_MS = 450;
 
+// Extra dwell on the face-down card at centre stage so the rarity glow
+// has time to register before the flip starts. Without this the "is that
+// gold?" moment is too short.
+const PRE_FLIP_DWELL_MS = 350;
+
 // Orchestrates the per-card reveal: a row of face-down cards at the
-// bottom, the "next" card pulsing. Tap → card flies to centre, auto-flips
-// after arriving, waits for a dismiss tap → flies back to its row slot
-// face-up. After all 5 are face-up the centre shows a Done button.
+// bottom, the "next" card pulsing. Tap → card flies to centre, the rarity
+// halo pulses for ~PRE_FLIP_DWELL_MS, the card auto-flips, waits for a
+// dismiss tap → flies back to its row slot face-up. After all five are
+// face-up the rarest card scales up into a hero arrangement and the
+// "Add to collection" CTA appears.
 export function RevealSequence({
   pack,
   cards,
@@ -27,17 +36,26 @@ export function RevealSequence({
   cards: Card[];
   onComplete: () => void;
 }) {
+  const reduced = useReducedMotion();
   const [revealed, setRevealed] = useState<boolean[]>(() => cards.map(() => false));
   const [centerIdx, setCenterIdx] = useState<number | null>(null);
   const [centerFaceup, setCenterFaceup] = useState(false);
 
+  const rarities = useMemo<Rarity[]>(() => cards.map(getCardRarity), [cards]);
   const allRevealed = revealed.every(Boolean);
-  const nextIdx = revealed.indexOf(false); // -1 if all revealed
+  const nextIdx = revealed.indexOf(false);
+  // Cards are passed in pre-sorted (sortForReveal) so the last index is
+  // the rarest card — the hero of the pack.
+  const heroIdx = cards.length - 1;
 
-  // Auto-flip the centre card once it's arrived from the row.
+  // Auto-flip the centre card once it's arrived from the row, with an
+  // extra pre-flip dwell so the rarity glow registers.
   useEffect(() => {
     if (centerIdx === null || centerFaceup) return;
-    const t = setTimeout(() => setCenterFaceup(true), ARRIVE_MS);
+    const t = setTimeout(
+      () => setCenterFaceup(true),
+      ARRIVE_MS + PRE_FLIP_DWELL_MS,
+    );
     return () => clearTimeout(t);
   }, [centerIdx, centerFaceup]);
 
@@ -58,20 +76,26 @@ export function RevealSequence({
 
   return (
     <div className="relative h-full w-full">
-      {/* Row of cards at the bottom */}
+      {/* Row of cards at the bottom. When the hero shot is active we hide
+          the hero card from the row (it's rendered at centre instead). */}
       <div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex gap-2 sm:gap-3">
         {cards.map((card, idx) => {
-          // Hold the slot open while a card is at centre stage so the row
-          // doesn't reflow.
-          if (idx === centerIdx) {
+          const isCentered = idx === centerIdx;
+          const isHeroAtCentre = allRevealed && idx === heroIdx;
+          if (isCentered || isHeroAtCentre) {
             return (
               <div
                 key={idx}
-                style={{ width: ROW_CARD_W, height: ROW_CARD_W / (1488 / 2079) }}
+                style={{
+                  width: ROW_CARD_W,
+                  height: ROW_CARD_W / (1488 / 2079),
+                }}
               />
             );
           }
           const isNext = idx === nextIdx;
+          // Slightly smaller in the hero shot so the hero feels bigger.
+          const w = allRevealed ? SUPPORTING_CARD_W : ROW_CARD_W;
           return (
             <motion.button
               key={idx}
@@ -84,33 +108,36 @@ export function RevealSequence({
                   : ""
               }`}
               animate={
-                isNext && !revealed[idx]
+                !reduced && isNext && !revealed[idx]
                   ? { y: [0, -3, 0] }
                   : { y: 0 }
               }
               transition={
-                isNext && !revealed[idx]
+                !reduced && isNext && !revealed[idx]
                   ? { y: { duration: 1.4, repeat: Infinity, ease: "easeInOut" } }
                   : { duration: 0.2 }
               }
-              whileTap={isNext && !revealed[idx] ? { scale: 0.94 } : undefined}
+              whileTap={
+                !reduced && isNext && !revealed[idx] ? { scale: 0.94 } : undefined
+              }
             >
               <CardReveal
                 card={card}
                 pack={pack}
                 faceup={revealed[idx]}
-                size={ROW_CARD_W}
+                size={w}
               />
             </motion.button>
           );
         })}
       </div>
 
-      {/* Centre stage card */}
+      {/* Centre stage: face-down card during the reveal, hero card when
+          all are revealed. */}
       <AnimatePresence>
-        {centerIdx !== null && (
+        {centerIdx !== null && !allRevealed && (
           <motion.button
-            key={centerIdx}
+            key={`center-${centerIdx}`}
             layoutId={`card-${centerIdx}`}
             onClick={tapCenter}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -121,6 +148,8 @@ export function RevealSequence({
               pack={pack}
               faceup={centerFaceup}
               size={CENTER_CARD_W}
+              rarity={rarities[centerIdx]}
+              showGlow
             />
             {centerFaceup && (
               <motion.div
@@ -134,16 +163,39 @@ export function RevealSequence({
             )}
           </motion.button>
         )}
+        {allRevealed && (
+          <motion.div
+            key="hero"
+            layoutId={`card-${heroIdx}`}
+            className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2"
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <CardReveal
+              card={cards[heroIdx]}
+              pack={pack}
+              faceup
+              size={HERO_CARD_W}
+              rarity={rarities[heroIdx]}
+              showGlow
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {/* Done button after all 5 cards have been revealed */}
+      {/* Add-to-collection CTA after all cards revealed. */}
       <AnimatePresence>
         {allRevealed && (
           <motion.div
             initial={{ opacity: 0, y: 12, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+            exit={{ opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 320,
+              damping: 24,
+              delay: 0.3,
+            }}
+            className="absolute bottom-[28%] sm:bottom-[26%] left-1/2 -translate-x-1/2 z-10"
           >
             <button
               onClick={onComplete}

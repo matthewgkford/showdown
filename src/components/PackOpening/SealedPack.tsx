@@ -1,15 +1,16 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import type { Pack } from "@/types/collection";
 
-// The pack sitting centre-screen with a gentle ambient bob, waiting to be
-// tapped. On tap it scales up + fades out (the placeholder "tear"); after
-// ~600ms it fires onComplete so the parent can swap to the reveal sequence.
+// The pack sitting centre-screen with a gentle ambient bob and a slow foil
+// shimmer that sweeps across it, waiting to be tapped. On tap it scales
+// up + fades out (the placeholder "tear"); after ~600ms it fires
+// onComplete so the parent can swap to the reveal sequence.
 //
-// Stage 2 keeps this minimal — opacity/scale only. Stage 3 will replace
-// this with a proper rip animation, dust particles, and a tear sound.
+// Reduced-motion users get a static pack with the same look but no bob,
+// no shimmer sweep, and a simple fade-out on tap.
 export function SealedPack({
   pack,
   onComplete,
@@ -17,6 +18,7 @@ export function SealedPack({
   pack: Pack;
   onComplete: () => void;
 }) {
+  const reduced = useReducedMotion();
   const [tearing, setTearing] = useState(false);
 
   function handleTap() {
@@ -33,16 +35,20 @@ export function SealedPack({
       className="relative outline-none"
       animate={
         tearing
-          ? { scale: 1.18, opacity: 0, rotate: -2 }
-          : { scale: 1, opacity: 1, y: [0, -4, 0] }
+          ? { scale: reduced ? 1 : 1.18, opacity: 0, rotate: reduced ? 0 : -2 }
+          : reduced
+            ? { scale: 1, opacity: 1, y: 0 }
+            : { scale: 1, opacity: 1, y: [0, -4, 0] }
       }
       transition={
         tearing
-          ? { duration: 0.55, ease: "easeOut" }
-          : { y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" } }
+          ? { duration: reduced ? 0.35 : 0.55, ease: "easeOut" }
+          : reduced
+            ? { duration: 0 }
+            : { y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" } }
       }
-      whileHover={!tearing ? { scale: 1.04 } : undefined}
-      whileTap={!tearing ? { scale: 0.97 } : undefined}
+      whileHover={!tearing && !reduced ? { scale: 1.04 } : undefined}
+      whileTap={!tearing && !reduced ? { scale: 0.97 } : undefined}
     >
       <div
         className="relative overflow-hidden rounded-2xl shadow-2xl shadow-black/70"
@@ -52,14 +58,36 @@ export function SealedPack({
           background: `linear-gradient(135deg, ${pack.accentColor} 0%, ${pack.accentColor}dd 45%, ${pack.accentColor}77 100%)`,
         }}
       >
-        {/* Foil seam */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(105deg, transparent 0%, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%, transparent 100%)",
-          }}
-        />
+        {/* Foil shimmer — animated diagonal sweep. Transparent → translucent
+            white → transparent, panned across the pack on a slow loop. */}
+        {!reduced ? (
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 -left-1/2 w-[60%]"
+            style={{
+              background:
+                "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.32) 50%, transparent 100%)",
+              filter: "blur(2px)",
+            }}
+            animate={{ x: ["0%", "330%"] }}
+            transition={{
+              duration: 4.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+              repeatDelay: 1.4,
+            }}
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(105deg, transparent 0%, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%, transparent 100%)",
+            }}
+          />
+        )}
+
         {/* Inner border for "wrapper" feel */}
         <div className="pointer-events-none absolute inset-2 rounded-xl border border-white/15" />
 
