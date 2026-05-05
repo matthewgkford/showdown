@@ -53,7 +53,7 @@ function TeamScore({
   const displayColor = getTeamDisplayColor(team.team);
   const logo = (
     <span
-      className={`shrink-0 inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-md ring-1 transition-colors ${
+      className={`shrink-0 inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md ring-1 transition-colors ${
         batting ? "bg-zinc-900/80" : "bg-transparent"
       }`}
       style={{
