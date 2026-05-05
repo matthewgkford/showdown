@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, Reorder, motion } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import cardsData from "@data/cards.json";
@@ -24,6 +24,7 @@ import {
   getPlayerRosterServerSnapshot,
   getPlayerRosterSnapshot,
   resetPlayerRoster,
+  setBatters,
   subscribe as subscribePlayerRoster,
   swapBatter,
   swapBatterSlots,
@@ -195,22 +196,69 @@ export function RosterDisplay({
       )}
 
       <section className="mb-10">
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500">
+        <h2 className="mb-3 flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500">
           Batting order
+          {editing && isPlayerTeam && (
+            <span className="text-zinc-600 font-normal normal-case tracking-normal">
+              · drag to reorder · tap to swap
+            </span>
+          )}
         </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-3">
-          {activeBatters.map((card, idx) => (
-            <RosterSlot
-              key={`batter-${idx}-${card.id}`}
-              card={card}
-              slotLabel={String(idx + 1)}
-              accentColor={accentColor}
-              editing={editing && isPlayerTeam}
-              seasonStats={seasonStats}
-              onTap={() => handleSlotTap(card, { kind: "batter", index: idx })}
-            />
-          ))}
-        </div>
+        {editing && isPlayerTeam ? (
+          <Reorder.Group
+            axis="y"
+            values={activeBatters}
+            onReorder={(next) => {
+              if (!season) return;
+              setBatters(
+                season.playerTeamSlug,
+                next.map((c) => c.id),
+              );
+            }}
+            className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-3"
+          >
+            {activeBatters.map((card, idx) => (
+              <Reorder.Item
+                key={card.id}
+                value={card}
+                className="touch-none"
+                whileDrag={{
+                  scale: 1.06,
+                  zIndex: 30,
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.6)",
+                }}
+                transition={{ type: "spring", stiffness: 360, damping: 28 }}
+              >
+                <RosterSlot
+                  card={card}
+                  slotLabel={String(idx + 1)}
+                  accentColor={accentColor}
+                  editing
+                  seasonStats={seasonStats}
+                  onTap={() =>
+                    handleSlotTap(card, { kind: "batter", index: idx })
+                  }
+                />
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-3">
+            {activeBatters.map((card, idx) => (
+              <RosterSlot
+                key={`batter-${idx}-${card.id}`}
+                card={card}
+                slotLabel={String(idx + 1)}
+                accentColor={accentColor}
+                editing={false}
+                seasonStats={seasonStats}
+                onTap={() =>
+                  handleSlotTap(card, { kind: "batter", index: idx })
+                }
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {activeSp && (

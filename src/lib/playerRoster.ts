@@ -131,6 +131,27 @@ export function swapBatterSlots(
   return state;
 }
 
+// Replace the entire batting order with a new permutation. Used by
+// drag-and-drop reordering in the team page edit mode. Validates the
+// new array is a true permutation of the current batters (same length,
+// same set of card ids) so a malformed call can't quietly drop or
+// duplicate cards.
+export function setBatters(
+  playerSlug: string,
+  newOrder: string[],
+): Roster | null {
+  const override = ensureOverride(playerSlug);
+  if (!override) return null;
+  if (newOrder.length !== override.batters.length) return override;
+  const existing = new Set(override.batters);
+  if (newOrder.some((id) => !existing.has(id))) return override;
+  if (new Set(newOrder).size !== newOrder.length) return override;
+  state = { ...override, batters: [...newOrder] };
+  persist();
+  notify();
+  return state;
+}
+
 export function swapStartingPitcher(
   playerSlug: string,
   newCardId: string,
