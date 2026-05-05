@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import type { GameState, TeamState } from "@/lib/gameState";
 import { getTeamDisplayColor } from "@/lib/teamColor";
+import type { Team } from "@/types/team";
 
 const REGULAR_INNINGS = 9;
 
@@ -64,14 +65,19 @@ export function Scorecard({
           </span>
         </div>
 
-        {/* Panel */}
-        <div
-          className="overflow-hidden rounded-2xl border border-zinc-800/80 shadow-2xl shadow-black/60"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, #0c0c10 0%, #07070a 100%)",
-          }}
-        >
+        {/* Bunting + panel, packed tight so the pennants visually hang
+            onto the top edge of the scoreboard. */}
+        <div className="relative">
+          <Bunting homeTeam={state.home.team} />
+
+          {/* Panel */}
+          <div
+            className="overflow-hidden rounded-2xl border border-zinc-800/80 shadow-2xl shadow-black/60"
+            style={{
+              backgroundImage:
+                "linear-gradient(180deg, #0c0c10 0%, #07070a 100%)",
+            }}
+          >
           {/* Header strip */}
           <div className="flex items-stretch border-b border-zinc-800/80 text-zinc-500">
             <div className="w-10 sm:w-12" />
@@ -107,6 +113,7 @@ export function Scorecard({
             completedIdx={homeCompletedIdx}
             justPlayedIdx={justPlayedHome}
           />
+          </div>
         </div>
 
         <button
@@ -245,6 +252,46 @@ function InningCell({
       }`}
     >
       {runs}
+    </div>
+  );
+}
+
+// Pennant bunting hanging from the top of the panel. Each pennant is
+// a small downward triangle clipped from a colored block; they
+// alternate the home team's primary + accent and wave on a slow
+// staggered rhythm so the row feels alive without being noisy.
+function Bunting({ homeTeam }: { homeTeam: Team }) {
+  const PENNANT_COUNT = 16;
+  const colorA = homeTeam.colors.primary;
+  const colorB = homeTeam.colors.accent;
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute -top-3 left-3 right-3 flex items-start justify-between"
+    >
+      {/* Thin string the pennants hang from. */}
+      <div className="absolute top-[1px] left-0 right-0 h-px bg-zinc-700/60" />
+      {Array.from({ length: PENNANT_COUNT }, (_, i) => (
+        <motion.div
+          key={i}
+          initial={{ rotate: 0 }}
+          animate={{ rotate: [-2.5, 2.5, -2.5] }}
+          transition={{
+            duration: 2.6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.13,
+          }}
+          style={{
+            backgroundColor: i % 2 === 0 ? colorA : colorB,
+            clipPath: "polygon(0 0, 100% 0, 50% 100%)",
+            width: 11,
+            height: 18,
+            transformOrigin: "top center",
+            opacity: 0.85,
+          }}
+        />
+      ))}
     </div>
   );
 }
