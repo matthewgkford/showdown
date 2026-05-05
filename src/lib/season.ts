@@ -1,7 +1,11 @@
 import { generateSchedule, getNextPlayerGame } from "@/lib/schedule";
 import { simulateGame } from "@/lib/gameSimulator";
 import { getEffectiveRoster } from "@/lib/rosters";
-import { rollWinPack } from "@/lib/rewardRoll";
+import {
+  packTierForWinCount,
+  rollPack,
+  tierAccentColor,
+} from "@/lib/rewardRoll";
 import { grantReward, newInstanceId } from "@/lib/rewards";
 import { resetPlayerRoster } from "@/lib/playerRoster";
 import { getTeamBySlug } from "@/lib/teams";
@@ -180,15 +184,28 @@ export function recordPlayerGame(
     const opponentSlug =
       seasonState.playerTeamSlug === awaySlug ? homeSlug : awaySlug;
     const opponent = getTeamBySlug(opponentSlug);
-    const playerTeam = getTeamBySlug(seasonState.playerTeamSlug);
+
+    // Count the player's wins so far this season (including this one).
+    // Drives which pack tier they get — most wins are Bronze; every
+    // 3rd / 5th / 10th tick up to Silver / Gold / Platinum.
+    const winCount = updated.filter(
+      (g) =>
+        g.result &&
+        ((g.awaySlug === seasonState!.playerTeamSlug &&
+          g.result.winner === "away") ||
+          (g.homeSlug === seasonState!.playerTeamSlug &&
+            g.result.winner === "home")),
+    ).length;
+    const tier = packTierForWinCount(winCount);
     grantReward({
       instanceId: newInstanceId(),
       earnedAt: new Date().toISOString(),
-      cardIds: rollWinPack(),
+      cardIds: rollPack(tier),
       label: opponent
         ? `Round ${round} · vs ${opponent.name}`
         : `Round ${round} win`,
-      accentColor: playerTeam?.colors.accent ?? "#10b981",
+      accentColor: tierAccentColor(tier),
+      tier,
     });
   }
 

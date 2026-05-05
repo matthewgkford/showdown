@@ -14,7 +14,12 @@ export type EarnedPack = {
   cardIds: string[];
   // Display label, e.g. "Round 4 · vs Boardwalk Bandits".
   label: string;
-  // Hex colour for the pack tile + reveal backdrop. Tinted with the
-  // player team's accent colour at grant time so wins feel personal.
+  // Hex colour for the pack tile + reveal backdrop. Tinted by the
+  // pack tier (bronze/silver/gold/platinum) so milestones read at a
+  // glance.
   accentColor: string;
+  // Pack tier, set by the win-count milestone schedule. Optional for
+  // backwards compat with EarnedPacks saved before tiers existed; the
+  // UI defaults to "bronze" when missing.
+  tier?: "bronze" | "silver" | "gold" | "platinum";
 };

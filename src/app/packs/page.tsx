@@ -229,12 +229,15 @@ function PackTile({
 
 function RewardTile({ pack }: { pack: EarnedPack }) {
   // Earned packs have their cards baked in at award time. Show the
-  // rarity badge counts as a tease (1 hero + 3 fillers without spoiling
-  // who specifically). Tinted with the player team's accent.
+  // rarity tier as the headline ("Bronze pack" / "Gold pack" / etc.)
+  // tinted with the tier's metallic accent so milestone packs read at
+  // a glance.
   const cards = pack.cardIds
     .map((id) => cardById.get(id))
     .filter((c): c is CardType => Boolean(c));
   const rarities = cards.map((c) => getCardRarity(c));
+  const tier = pack.tier ?? "bronze";
+  const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
 
   return (
     <article
@@ -255,7 +258,7 @@ function RewardTile({ pack }: { pack: EarnedPack }) {
             className="text-[10px] font-bold uppercase tracking-[0.2em]"
             style={{ color: pack.accentColor }}
           >
-            Win reward
+            {tierName} win pack
           </div>
           <div className="mt-1 text-xl sm:text-2xl font-bold tracking-tight">
             {pack.label}

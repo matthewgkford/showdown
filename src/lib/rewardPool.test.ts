@@ -1,9 +1,47 @@
 import { describe, expect, it } from "vitest";
-import { getRewardPool } from "./rewardPool";
+import {
+  getCommonCards,
+  getLegendaryCards,
+  getRareCards,
+  getRewardPool,
+  getUncommonCards,
+} from "./rewardPool";
 import { getAllRosters } from "./rosters";
 import { getCardRarity } from "./rarity";
 
-describe("getRewardPool", () => {
+describe("rarity-split pools", () => {
+  it("getCommonCards returns only common-rarity cards", () => {
+    const cards = getCommonCards();
+    expect(cards.length).toBeGreaterThan(0);
+    for (const c of cards) expect(getCardRarity(c)).toBe("common");
+  });
+
+  it("getUncommonCards returns only uncommon-rarity cards", () => {
+    const cards = getUncommonCards();
+    expect(cards.length).toBeGreaterThan(0);
+    for (const c of cards) expect(getCardRarity(c)).toBe("uncommon");
+  });
+
+  it("getRareCards returns only rare-rarity cards", () => {
+    const cards = getRareCards();
+    expect(cards.length).toBeGreaterThan(0);
+    for (const c of cards) expect(getCardRarity(c)).toBe("rare");
+  });
+
+  it("getLegendaryCards returns only legendary-rarity cards", () => {
+    const cards = getLegendaryCards();
+    expect(cards.length).toBeGreaterThan(0);
+    for (const c of cards) expect(getCardRarity(c)).toBe("legendary");
+  });
+
+  it("each pool returns the same reference on subsequent calls (cached)", () => {
+    expect(getCommonCards()).toBe(getCommonCards());
+    expect(getRareCards()).toBe(getRareCards());
+    expect(getLegendaryCards()).toBe(getLegendaryCards());
+  });
+});
+
+describe("getRewardPool (legacy non-rostered helper)", () => {
   it("contains exactly the cards not in any starting roster", () => {
     const pool = getRewardPool();
     const rosterIds = new Set<string>();
@@ -17,24 +55,7 @@ describe("getRewardPool", () => {
     }
   });
 
-  it("has at least 50 cards", () => {
-    // The exact size shifts as new card batches land; the floor matters
-    // (pool needs ≥4 cards for win packs to roll) more than the precise
-    // count. Today's snapshot is 165 — 51 from the original starter
-    // build-out plus the 114 from Batch 7.
-    expect(getRewardPool().length).toBeGreaterThanOrEqual(50);
-  });
-
   it("returns the same reference on subsequent calls (cached)", () => {
-    const a = getRewardPool();
-    const b = getRewardPool();
-    expect(a).toBe(b);
-  });
-
-  it("contains rare and legendary tiers (the elite unlock pile)", () => {
-    const pool = getRewardPool();
-    const rarities = new Set(pool.map((c) => getCardRarity(c)));
-    expect(rarities.has("rare")).toBe(true);
-    expect(rarities.has("legendary")).toBe(true);
+    expect(getRewardPool()).toBe(getRewardPool());
   });
 });
