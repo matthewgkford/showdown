@@ -171,15 +171,37 @@ export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState
         first = batter;
       }
       break;
-    case "gb":
-      // Fielder's choice: with a runner on first, defense gets the
-      // force-out at second and the batter takes first. Runners on
-      // 2nd/3rd hold (they're not forced). With no runner on 1st, it's
-      // a routine ground out — batter is out, bases unchanged.
+    case "gb": {
+      // Fielder's choice. The runner on 1st is always forced (the batter
+      // is taking 1st); 2nd is forced only when 1st is occupied; 3rd
+      // only when both 1st and 2nd are. The lead runner of the forced
+      // chain is OUT; every other forced runner advances one base.
+      // Non-forced runners hold.
       if (first) {
-        first = batter;
+        const r1 = first;
+        const r2 = second;
+        const r3 = third;
+        if (r2 && r3) {
+          // Bases loaded → lead force at home (R3 OUT, no run scores).
+          first = batter;
+          second = r1;
+          third = r2;
+        } else if (r2) {
+          // 1st + 2nd → lead force at 3rd (R2 OUT). R1 advances to 2nd.
+          first = batter;
+          second = r1;
+          third = null;
+        } else {
+          // Just 1st (with optional non-forced 3rd) → lead force at 2nd
+          // (R1 OUT). R3 if present holds.
+          first = batter;
+          // second stays null, third stays as-is.
+        }
       }
+      // No runner on 1st → no force chain, regular ground out, bases
+      // unchanged (batter is out at first).
       break;
+    }
     // Other outs: no base or run change.
     case "so":
     case "fb":

@@ -390,7 +390,33 @@ describe("outs", () => {
     expect(g.bases.third).toBeNull();
   });
 
-  it("gb with bases loaded: lead force out, batter to 1st, others hold", () => {
+  it("gb with 1st + 2nd: lead force at 3rd — R2 OUT, R1 advances to 2nd", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: batter("r2"), third: null },
+    };
+    const g = applyAtBatOutcome(g0, "gb");
+    expect(g.outs).toBe(1);
+    expect(g.bases.first?.id).toBe(g0.away.lineup[0].id);
+    expect(g.bases.second?.id).toBe("r1");
+    expect(g.bases.third).toBeNull();
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("gb with 1st + 3rd (3rd not forced): R1 OUT, R3 holds", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: { first: batter("r1"), second: null, third: batter("r3") },
+    };
+    const g = applyAtBatOutcome(g0, "gb");
+    expect(g.outs).toBe(1);
+    expect(g.bases.first?.id).toBe(g0.away.lineup[0].id);
+    expect(g.bases.second).toBeNull();
+    expect(g.bases.third?.id).toBe("r3");
+    expect(g.away.runs).toBe(0);
+  });
+
+  it("gb with bases loaded: lead force at home — R3 OUT, no run scores", () => {
     const g0: GameState = {
       ...freshGame(),
       bases: {
@@ -402,8 +428,8 @@ describe("outs", () => {
     const g = applyAtBatOutcome(g0, "gb");
     expect(g.outs).toBe(1);
     expect(g.bases.first?.id).toBe(g0.away.lineup[0].id);
-    expect(g.bases.second?.id).toBe("r2");
-    expect(g.bases.third?.id).toBe("r3");
+    expect(g.bases.second?.id).toBe("r1");
+    expect(g.bases.third?.id).toBe("r2");
     expect(g.away.runs).toBe(0);
   });
 

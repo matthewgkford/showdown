@@ -1256,13 +1256,26 @@ function computeSteps(
   }
 
   // Fielder's choice on a ground out: there was a runner on 1st pre-play
-  // and the batter ended up there post-play, meaning the lead runner was
-  // forced out. We still want to draw the OG runner on 1st in the first
-  // frame so the player sees who got tagged, but they don't advance.
-  // AnimatePresence will fade them out as the next frame removes them.
+  // and the batter ended up there post-play, meaning the lead forced
+  // runner was put out. The lead-out depends on which bases were
+  // occupied (1st-only → R1, 1st+2nd → R2, loaded → R3). We find them
+  // by spotting the pre-play runner who isn't on any base post-play —
+  // they get drawn at their original base for one frame, then fade out
+  // via AnimatePresence as the next frame omits them.
   const isFCGroundOut =
     outcome === "gb" && !!prev.first && current.first?.id === justBatted.id;
-  const forcedOutId = isFCGroundOut ? prev.first?.id : null;
+  const forcedOutId = (() => {
+    if (!isFCGroundOut) return null;
+    const currentIds = new Set(
+      [current.first?.id, current.second?.id, current.third?.id].filter(
+        (id): id is string => Boolean(id),
+      ),
+    );
+    const preRunners = [prev.first, prev.second, prev.third].filter(
+      (r): r is BatterCard => Boolean(r),
+    );
+    return preRunners.find((r) => !currentIds.has(r.id))?.id ?? null;
+  })();
 
   const initial: RunnerSnapshot[] = [];
   if (prev.first) initial.push({ card: prev.first, pos: "first" });
@@ -1373,7 +1386,7 @@ function FieldView({
         )}
       </motion.div>
 
-      <Field runners={visible} outcome={outcome} />
+      <Field runners={visible} outcome={outcome} preBases={preBases} />
 
       {isAnimating ? (
         <div className="h-10" aria-hidden />
@@ -1529,9 +1542,11 @@ function FinalScore({
 function Field({
   runners,
   outcome,
+  preBases,
 }: {
   runners: RunnerSnapshot[];
   outcome: Outcome;
+  preBases: Bases;
 }) {
   return (
     <div className="relative aspect-square w-full max-w-[min(70vh,420px)]">
@@ -1561,7 +1576,7 @@ function Field({
 
         {/* Outcome trajectory: lives inside the same viewBox so coords
             line up perfectly with the diamond. */}
-        <OutcomeTrajectory outcome={outcome} />
+        <OutcomeTrajectory outcome={outcome} preBases={preBases} />
       </svg>
 
       {/* Big animated label sitting on top of the diamond — K for a
@@ -1587,28 +1602,50 @@ function Field({
 // "deeper" outfield. Paths start at home and curve outward, with shape
 // chosen to evoke each outcome — short arcs for outs, long sweeping
 // arcs for hits, a near-straight rocket for a homer.
-const TRAJECTORIES: Partial<
-  Record<Outcome, { paths: string[]; duration: number; segDelay?: number }>
-> = {
+type TrajectoryCfg = {
+  paths: string[];
+  duration: number;
+  segDelay?: number;
+};
+
+const TRAJECTORIES: Partial<Record<Outcome, TrajectoryCfg>> = {
   single: { paths: ["M 50 88 Q 65 60 75 38"], duration: 0.65 },
   singlePlus: { paths: ["M 50 88 Q 70 55 82 32"], duration: 0.7 },
   double: { paths: ["M 50 88 Q 72 38 88 16"], duration: 0.85 },
   triple: { paths: ["M 50 88 Q 30 38 12 12"], duration: 1.0 },
   homer: { paths: ["M 50 88 Q 50 35 50 -20"], duration: 1.0 },
-  // Ground out: a chopper to short, then the throw to first.
-  gb: {
-    paths: ["M 50 88 L 32 64", "M 32 64 L 84 50"],
-    duration: 0.42,
-    segDelay: 0.42,
-  },
   // Fly ball: a long arc up and out to a fielder.
   fb: { paths: ["M 50 88 Q 50 22 70 38"], duration: 0.95 },
   // Pop up: brief lazy arc dying near home plate.
   pu: { paths: ["M 50 88 Q 50 65 56 80"], duration: 0.55 },
 };
 
-function OutcomeTrajectory({ outcome }: { outcome: Outcome }) {
-  const cfg = TRAJECTORIES[outcome];
+// Ground out: a chopper to short, then the throw to wherever the lead
+// forced runner was put out. Empty bases / no force → throw to 1st
+// (the batter). 1st only or 1st+3rd → throw to 2nd (R1 forced). 1st+2nd
+// → throw to 3rd (R2 forced). Loaded → throw home (R3 forced).
+function gbTrajectory(preBases: Bases): TrajectoryCfg {
+  const target = (() => {
+    if (!preBases.first) return { x: 84, y: 50 }; // throw to 1st
+    if (preBases.second && preBases.third) return { x: 50, y: 84 }; // home
+    if (preBases.second) return { x: 16, y: 50 }; // 3rd
+    return { x: 50, y: 16 }; // 2nd
+  })();
+  return {
+    paths: ["M 50 88 L 32 64", `M 32 64 L ${target.x} ${target.y}`],
+    duration: 0.42,
+    segDelay: 0.42,
+  };
+}
+
+function OutcomeTrajectory({
+  outcome,
+  preBases,
+}: {
+  outcome: Outcome;
+  preBases: Bases;
+}) {
+  const cfg = outcome === "gb" ? gbTrajectory(preBases) : TRAJECTORIES[outcome];
   if (!cfg) return null;
 
   const isHit =
