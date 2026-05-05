@@ -12,6 +12,7 @@ import {
   startGame,
 } from "@/lib/gameState";
 import type { EffectiveRoster } from "@/types/roster";
+import { pickReliever } from "@/lib/bullpen";
 import type { Team } from "@/types/team";
 import type { GameResult } from "@/types/schedule";
 
@@ -75,8 +76,10 @@ function autoManagePitcher(state: GameState): GameState {
   const fielding = fieldingTeam(state);
   const fatigue = pitcherFatigue(fielding, state.inning);
   if (fatigue > 0 && fielding.bullpen.length > 0) {
+    const next = pickReliever(fielding.bullpen, state.inning);
+    if (!next) return state;
     const fieldingSide: "home" | "away" = state.half === "top" ? "home" : "away";
-    return changePitcher(state, fieldingSide, fielding.bullpen[0].id);
+    return changePitcher(state, fieldingSide, next.id);
   }
   return state;
 }

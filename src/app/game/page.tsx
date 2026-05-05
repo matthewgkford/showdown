@@ -54,6 +54,7 @@ import {
   saveActiveExhibitionGame,
   saveActiveSeasonGame,
 } from "@/lib/activeGame";
+import { pickReliever } from "@/lib/bullpen";
 import { getEffectiveRoster } from "@/lib/rosters";
 import { getOverrideFor } from "@/lib/playerRoster";
 import { getTeamBySlug } from "@/lib/teams";
@@ -622,9 +623,12 @@ function Play({
           upcomingFieldingSide === "home" ? game.home : game.away;
         const fatigue = pitcherFatigue(fielding, game.inning);
         if (fatigue > 0 && fielding.bullpen.length > 0) {
-          setGame((g) =>
-            changePitcher(g, upcomingFieldingSide, fielding.bullpen[0].id),
-          );
+          const next = pickReliever(fielding.bullpen, game.inning);
+          if (next) {
+            setGame((g) =>
+              changePitcher(g, upcomingFieldingSide, next.id),
+            );
+          }
         }
       }
     }
