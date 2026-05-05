@@ -345,7 +345,7 @@ function UpcomingRow({
         alt={opponent.name}
         width={48}
         height={48}
-        className="h-5 w-5 rounded-sm object-contain"
+        className="h-7 w-7 rounded-md object-contain"
       />
       <span className="flex-1 truncate text-zinc-200">{opponent.name}</span>
     </div>
@@ -383,7 +383,7 @@ function ResultRow({
         alt={opponent.name}
         width={48}
         height={48}
-        className="h-5 w-5 rounded-sm object-contain"
+        className="h-7 w-7 rounded-md object-contain"
       />
       <span className="flex-1 truncate text-zinc-300">{opponent.name}</span>
       <span className="font-mono text-zinc-200 tabular-nums">
@@ -426,7 +426,7 @@ function StandingsRow({
         alt={team.name}
         width={48}
         height={48}
-        className="h-5 w-5 rounded-sm object-contain"
+        className="h-7 w-7 rounded-md object-contain"
       />
       <Link
         href={`/team/${team.slug}`}
