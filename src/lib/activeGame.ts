@@ -30,15 +30,30 @@ function readJson<T>(key: string): T | null {
   }
 }
 
-// inningRuns landed in TeamState mid-development, so any active game
-// saved before the field existed needs to be patched on read. Defaulting
-// to [] is safe — applyAtBatOutcome will fill it in from the next at-bat.
+// Fields landed in TeamState mid-development; saves from before need
+// safe defaults. inningRuns → []; hits → 0. applyAtBatOutcome fills
+// these in correctly going forward.
 function migrateGameState(state: GameState): GameState {
-  if (!state.away.inningRuns || !state.home.inningRuns) {
+  const aw = state.away;
+  const hm = state.home;
+  if (
+    aw.inningRuns === undefined ||
+    hm.inningRuns === undefined ||
+    aw.hits === undefined ||
+    hm.hits === undefined
+  ) {
     return {
       ...state,
-      away: { ...state.away, inningRuns: state.away.inningRuns ?? [] },
-      home: { ...state.home, inningRuns: state.home.inningRuns ?? [] },
+      away: {
+        ...aw,
+        inningRuns: aw.inningRuns ?? [],
+        hits: aw.hits ?? 0,
+      },
+      home: {
+        ...hm,
+        inningRuns: hm.inningRuns ?? [],
+        hits: hm.hits ?? 0,
+      },
     };
   }
   return state;

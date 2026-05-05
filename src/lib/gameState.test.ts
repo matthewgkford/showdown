@@ -140,6 +140,32 @@ describe("startGame", () => {
     expect(g.away.inningRuns).toEqual([]);
     expect(g.home.inningRuns).toEqual([]);
   });
+
+  it("starts both teams with 0 hits", () => {
+    const g = freshGame();
+    expect(g.away.hits).toBe(0);
+    expect(g.home.hits).toBe(0);
+  });
+});
+
+describe("hits tracking", () => {
+  it("hits accumulate on single / single+ / double / triple / homer", () => {
+    let g = freshGame();
+    for (const out of ["single", "singlePlus", "double", "triple", "homer"] as const) {
+      g = applyAtBatOutcome(g, out);
+    }
+    expect(g.away.hits).toBe(5);
+  });
+
+  it("walks and outs do not count as hits", () => {
+    let g = freshGame();
+    g = applyAtBatOutcome(g, "bb");
+    g = applyAtBatOutcome(g, "so");
+    g = applyAtBatOutcome(g, "gb");
+    g = applyAtBatOutcome(g, "fb");
+    g = applyAtBatOutcome(g, "pu");
+    expect(g.away.hits).toBe(0);
+  });
 });
 
 describe("inningRuns tracking", () => {

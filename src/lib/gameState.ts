@@ -24,6 +24,9 @@ export type TeamState = {
   // team that hasn't batted yet in an inning has nothing at that index.
   // Used by the half-inning scorecard to draw a traditional linescore.
   inningRuns: number[];
+  // Total hits — singles, single+s, doubles, triples, and homers.
+  // Walks and outs don't count. Shown alongside runs on the scorecard.
+  hits: number;
 };
 
 export type GameState = {
@@ -57,6 +60,7 @@ export function startGame(away: TeamSetup, home: TeamSetup): GameState {
       battingIndex: 0,
       runs: 0,
       inningRuns: [],
+      hits: 0,
     },
     home: {
       ...home,
@@ -64,6 +68,7 @@ export function startGame(away: TeamSetup, home: TeamSetup): GameState {
       battingIndex: 0,
       runs: 0,
       inningRuns: [],
+      hits: 0,
     },
   };
 }
@@ -226,6 +231,13 @@ export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState
     }
   }
 
+  const isHit =
+    outcome === "single" ||
+    outcome === "singlePlus" ||
+    outcome === "double" ||
+    outcome === "triple" ||
+    outcome === "homer";
+
   const updatedTeam: TeamState = {
     ...team,
     battingIndex: (team.battingIndex + 1) % team.lineup.length,
@@ -234,6 +246,7 @@ export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState
       runsScored > 0
         ? addInningRuns(team.inningRuns ?? [], state.inning - 1, runsScored)
         : team.inningRuns ?? [],
+    hits: (team.hits ?? 0) + (isHit ? 1 : 0),
   };
 
   return {
