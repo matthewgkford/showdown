@@ -230,3 +230,11 @@ The "good card" is sourced from a reward pool defined as cards not already in an
 **Reasoning**: Original spec was "1 rare/legendary + 3 commons" but the reward pool is all elite cards (commons + uncommons live in the starter rosters). Going generous on fillers makes wins feel rewarding in v1. If the meta gets too elite later, easy levers: lower `HERO_LEGENDARY_CHANCE`, swap fillers to draw from `cards.json` instead of the reward pool, or shrink to 2 cards per pack.
 
 ---
+
+## 2026-05-05: Starter rosters all commons (Phase 8 — restructuring)
+
+**Decision**: Rebuilt every team's starting roster to be entirely common-tier cards (points < 400). Top 90 commons go to batters, top 10 commons starting pitchers go to SP slots, top 30 commons go to bullpen — all distributed via LPT + swap optimisation for fairness (final spread ~1.5%). Average team total dropped from ~4,881 → ~4,000 pts.
+
+**Reasoning**: Earlier rosters mixed in uncommons + low rares, which made the starting state feel "almost there" — wins didn't translate into a meaningfully different roster. With pure-common starters, every uncommon/rare/legendary you pull from a win pack is a real upgrade. Reward pool composition shifts from 96/12/32/25 (c/u/r/l) to 36/57/47/25 — a much healthier mix where fillers actually behave like fillers and the rares/legendaries genuinely move the needle. Also gives promotion / next-tier progression real headroom: Single-A is the basic stage, Double-A scales those same opponents up by 1.4×, and the player is climbing both the league ladder AND the rarity ladder via packs.
+
+---

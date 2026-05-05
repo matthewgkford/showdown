@@ -2,201 +2,201 @@
   {
     "teamSlug": "bagels",
     "batters": [
-      "hundley-1997-nym",
-      "vlad-mon",
-      "stowers-2025-mia",
-      "lindor-2025-nym",
-      "ichiro-sea",
-      "vientos-2024-nym",
-      "witt-2026-kc",
-      "ramirez-2026-cle",
-      "plawecki-2018-nym"
+      "laureano-2025-sd",
+      "damon-kc",
+      "kwan-2024-cle",
+      "rooker-2025-oak",
+      "burleson-2025-stl",
+      "dingler-2025-det",
+      "butler-2025-oak",
+      "xedwards-2025-mia",
+      "tatis-2026-sd"
     ],
-    "startingPitcher": "bell-1922-sls",
+    "startingPitcher": "severino-2024-nym",
     "relievers": [
-      "miller-2026-sd",
-      "gagne-2004-lad",
-      "pagan-2025-cin"
+      "chapman-2025-bos",
+      "megill-2024-mil",
+      "faucher-2025-mia"
     ]
   },
   {
     "teamSlug": "pepperoni-slices",
     "batters": [
-      "robert-jr-2021-chw",
-      "turner-2021-lad",
-      "jung-2026-tex",
-      "berra-1956-nyy",
-      "polanco-2025-sea",
-      "bader-2021-stl",
-      "pham-2023-ari",
+      "pederson-2022-sf",
+      "vientos-2024-nym",
+      "pages-2025-lad",
+      "ohearn-2025-sd",
+      "hays-2025-cin",
+      "clement-2025-tor",
+      "horwitz-2025-pit",
       "lee-2026-sf",
-      "tatis-2026-sd"
+      "alvarez-2024-nym"
     ],
-    "startingPitcher": "alcantara-2026-mia",
+    "startingPitcher": "webb-2026-sf",
     "relievers": [
-      "randy-johnson-ari",
-      "smoltz-2003-atl",
-      "smith-2021-nym"
+      "clase-2024-cle",
+      "fisher-2025-tor",
+      "cruz-2025-nyy"
     ]
   },
   {
     "teamSlug": "skyliners",
     "batters": [
-      "beltran-2006-nym",
-      "oneill-2021-stl",
-      "posada-nyy",
-      "bernie-nyy",
-      "reyes-2011-nym",
+      "busch-2025-chc",
       "india-2021-cin",
-      "story-2022-bos",
-      "vogelbach-2022-nym",
-      "escobar-2022-nym"
+      "duran-2025-bos",
+      "frelick-2025-mil",
+      "collins-2025-mil",
+      "cronenworth-2025-sd",
+      "friedl-2025-cin",
+      "caballero-2025-nyy",
+      "seager-2026-tex"
     ],
-    "startingPitcher": "misiorowski-2026-mil",
+    "startingPitcher": "eovaldi-2026-tex",
     "relievers": [
-      "woo-2026-sea",
-      "megill-2024-nym",
+      "rivera-2008-nyy",
+      "ottavino-2022-nym",
       "hendriks-2022-chw"
     ]
   },
   {
     "teamSlug": "lincoln-tunnellers",
     "batters": [
-      "soto-2025-nym",
-      "suzuki-2026-chc",
-      "nimmo-2018-nym",
-      "bo-jackson-1990-kc",
-      "conforto-2019-nym",
-      "cruz-2026-pit",
-      "soler-2023-mia",
-      "rodriguez-2026-sea",
-      "alvarez-2024-nym"
+      "hernandez-1986-nym",
+      "walker-2023-ari",
+      "andujar-2025-cin",
+      "larkin-cin",
+      "murphy-2011-nym",
+      "ramirez-2026-cle",
+      "mangum-2025-tbr",
+      "vogelbach-2022-nym",
+      "gimenez-2026-tor"
     ],
-    "startingPitcher": "dickey-2010-nym",
+    "startingPitcher": "houser-2025-tbr",
     "relievers": [
-      "chapman-2025-bos",
-      "diaz-2022-nym",
-      "hill-2021-nym"
+      "lugo-2018-nym",
+      "bautista-2025-bal",
+      "erceg-2025-kc"
     ]
   },
   {
     "teamSlug": "parkways",
     "batters": [
-      "delacruz-2026-cin",
-      "yelich-2024-mil",
-      "winker-2021-cin",
-      "jeter-nyy",
-      "cespedes-2015-nym",
-      "nootbaar-2023-stl",
-      "larkin-cin",
-      "villar-2021-nym",
-      "crawford-2026-sea"
+      "polanco-2025-sea",
+      "bader-2021-stl",
+      "renfroe-2022-mil",
+      "ydiaz-2025-tbr",
+      "paredes-2025-hou",
+      "barger-2025-tor",
+      "psmith-2025-ari",
+      "rodriguez-2026-sea",
+      "escobar-2022-nym"
     ],
-    "startingPitcher": "skenes-2026-pit",
+    "startingPitcher": "colon-ana",
     "relievers": [
-      "pettitte-nyy",
-      "williams-2023-mil",
-      "ottavino-2022-nym"
+      "tbeck-2025-sf",
+      "sewald-2021-sea",
+      "smith-2021-nym"
     ]
   },
   {
     "teamSlug": "mischief-nighters",
     "batters": [
-      "abrams-2026-wsh",
-      "carpenter-2024-det",
-      "votto-2021-cin",
-      "buxton-2026-min",
-      "vlad-jr-2026-tor",
-      "kwan-2024-cle",
-      "murphy-2011-nym",
-      "canha-2022-nym",
-      "naylor-2026-sea"
+      "goodman-2025-col",
+      "chourio-2024-mil",
+      "soler-2023-mia",
+      "hundley-chc",
+      "arozarena-2026-sea",
+      "keith-2025-det",
+      "call-2025-lad",
+      "teel-2025-chw",
+      "frazier-2025-kc"
     ],
-    "startingPitcher": "manaea-2024-nym",
+    "startingPitcher": "clemens-nyy",
     "relievers": [
-      "walker-2022-nym",
-      "clemens-nyy",
-      "wagner-2006-nym"
+      "williams-2023-mil",
+      "hader-2023-sd",
+      "pagan-2025-cin"
     ]
   },
   {
     "teamSlug": "diner-rats",
     "batters": [
-      "clemente-1970-pit",
-      "leonard-1943-hom",
-      "piazza-nym",
-      "griffey-cin",
-      "hernandez-2021-tor",
-      "renfroe-2022-mil",
+      "crow-armstrong-2025-chc",
+      "wood-2025-wsh",
       "iglesias-2024-nym",
-      "machado-2026-sd",
-      "seager-2026-tex"
+      "witt-2026-kc",
+      "profar-2025-atl",
+      "sheets-2025-sd",
+      "durbin-2025-mil",
+      "rojas-2025-lad",
+      "vaughn-2025-mil"
     ],
-    "startingPitcher": "peterson-2024-nym",
+    "startingPitcher": "holmes-2025-nym",
     "relievers": [
-      "clase-2024-cle",
-      "holmes-2025-nym",
-      "mahomes-1999-nym"
+      "diaz-2022-nym",
+      "keller-2025-chc",
+      "csmith-2025-cle"
     ]
   },
   {
     "teamSlug": "boardwalk-bandits",
     "batters": [
-      "mcneil-2019-nym",
-      "sosa-chc",
-      "goldschmidt-2022-stl",
-      "stewart-2026-cin",
-      "pujols-2022-stl",
-      "chourio-2024-mil",
-      "arozarena-2026-sea",
-      "bogaerts-2026-sd",
-      "adames-2026-sf"
+      "conforto-2019-nym",
+      "grisham-2025-nyy",
+      "bell-2021-wsh",
+      "pham-2023-ari",
+      "villar-2021-nym",
+      "triolo-2025-pit",
+      "moncada-2025-laa",
+      "machado-2026-sd",
+      "tovar-2025-col"
     ],
-    "startingPitcher": "senga-2023-nym",
+    "startingPitcher": "swr-2025-min",
     "relievers": [
-      "rivera-2008-nyy",
-      "eovaldi-2026-tex",
-      "megill-2024-mil"
+      "gagne-2004-lad",
+      "bender-2025-mia",
+      "cleavinger-2025-tbr"
     ]
   },
   {
     "teamSlug": "rippers",
     "batters": [
-      "marte-2024-ari",
-      "freeman-2023-lad",
-      "frank-thomas-chw",
-      "rutschman-2026-bal",
-      "pederson-2022-sf",
-      "damon-kc",
-      "bell-2021-wsh",
-      "gimenez-2026-tor",
-      "guillorme-2022-nym"
+      "moniak-2025-col",
+      "langford-2025-tex",
+      "hhernandez-2025-mia",
+      "story-2022-bos",
+      "canha-2022-nym",
+      "westburg-2025-bal",
+      "narvaez-2025-bos",
+      "straw-2025-tor",
+      "higashioka-2025-tex"
     ],
-    "startingPitcher": "cease-2026-tor",
+    "startingPitcher": "megill-2024-nym",
     "relievers": [
-      "severino-2024-nym",
-      "lugo-2018-nym",
-      "hader-2023-sd"
+      "smoltz-2003-atl",
+      "wagner-2006-nym",
+      "bednar-2025-nyy"
     ]
   },
   {
     "teamSlug": "meadowlands",
     "batters": [
-      "ripken-1991-bal",
-      "nomar-bos",
-      "carroll-2026-ari",
-      "arenado-2022-stl",
-      "hernandez-1986-nym",
-      "walker-2023-ari",
-      "hundley-chc",
+      "pujols-2022-stl",
+      "cruz-2026-pit",
+      "nootbaar-2023-stl",
+      "kirk-2025-tor",
+      "bogaerts-2026-sd",
       "baty-2025-nym",
-      "raleigh-2026-sea"
+      "beck-2025-col",
+      "wperez-2025-det",
+      "guillorme-2022-nym"
     ],
-    "startingPitcher": "schilling-ari",
+    "startingPitcher": "irvin-2025-wsh",
     "relievers": [
-      "webb-2026-sf",
-      "colon-ana",
-      "sewald-2021-sea"
+      "tclarke-2025-kc",
+      "mahomes-1999-nym",
+      "bazardo-2025-sea"
     ]
   }
 ]
