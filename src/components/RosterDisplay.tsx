@@ -16,6 +16,7 @@ import {
   resetPlayerRoster,
   subscribe as subscribePlayerRoster,
   swapBatter,
+  swapBatterSlots,
   swapReliever,
   swapStartingPitcher,
 } from "@/lib/playerRoster";
@@ -421,6 +422,12 @@ function SwapModal({
     onClose();
   }
 
+  function handleMoveTo(targetIdx: number): void {
+    if (!slot || !playerSlug || slot.kind !== "batter") return;
+    swapBatterSlots(playerSlug, slot.index, targetIdx);
+    onClose();
+  }
+
   const slotTitle =
     slot?.kind === "batter"
       ? `Batting #${slot.index + 1}`
@@ -468,6 +475,41 @@ function SwapModal({
               >
                 Cancel
               </button>
+            </div>
+
+            {/* Move-to-slot row, batters only — tap a number to swap
+                this player into that batting slot. The current slot is
+                disabled. */}
+            {slot?.kind === "batter" && (
+              <div className="mb-5">
+                <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">
+                  Move to slot
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeBatters.map((_, i) => {
+                    const isCurrent = i === slot.index;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={isCurrent}
+                        onClick={() => handleMoveTo(i)}
+                        className={`h-9 w-9 rounded-md text-sm font-bold tabular-nums transition-colors ${
+                          isCurrent
+                            ? "bg-zinc-900 text-zinc-600 cursor-default border border-zinc-800"
+                            : "bg-zinc-900 text-zinc-200 border border-zinc-700 hover:border-emerald-500/60 hover:text-emerald-300"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">
+              Replace from collection
             </div>
 
             {candidates.length === 0 ? (

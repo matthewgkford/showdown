@@ -110,6 +110,27 @@ export function swapBatter(
   return state;
 }
 
+// Swap two batters within the lineup — used for reordering the batting
+// order without changing who's on the active roster. No-op if either
+// index is out of range or both are the same.
+export function swapBatterSlots(
+  playerSlug: string,
+  idxA: number,
+  idxB: number,
+): Roster | null {
+  const override = ensureOverride(playerSlug);
+  if (!override) return null;
+  if (idxA === idxB) return override;
+  if (idxA < 0 || idxA >= override.batters.length) return override;
+  if (idxB < 0 || idxB >= override.batters.length) return override;
+  const batters = [...override.batters];
+  [batters[idxA], batters[idxB]] = [batters[idxB], batters[idxA]];
+  state = { ...override, batters };
+  persist();
+  notify();
+  return state;
+}
+
 export function swapStartingPitcher(
   playerSlug: string,
   newCardId: string,
