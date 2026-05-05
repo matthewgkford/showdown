@@ -8,6 +8,7 @@ import {
 } from "@/lib/rewardRoll";
 import { grantReward, newInstanceId } from "@/lib/rewards";
 import { resetPlayerRoster } from "@/lib/playerRoster";
+import { mergeGameStats, resetSeasonStats } from "@/lib/seasonStats";
 import { getTeamBySlug } from "@/lib/teams";
 import type { SeasonState } from "@/types/season";
 import type { GameResult, ScheduledGame } from "@/types/schedule";
@@ -132,6 +133,8 @@ export function startSeason(playerTeamSlug: string): SeasonState {
   // tied to a specific slug and would be ignored anyway, but clearing
   // keeps localStorage tidy.
   resetPlayerRoster();
+  // New season → fresh stats slate.
+  resetSeasonStats();
   notify();
   return seasonState;
 }
@@ -231,7 +234,16 @@ function simulateRoundGame(g: ScheduledGame): GameResult {
     return { awayRuns: 0, homeRuns: 0, winner: "home" };
   }
 
-  return simulateGame(awayTeam, awayRoster, homeTeam, homeRoster);
+  const sim = simulateGame(awayTeam, awayRoster, homeTeam, homeRoster);
+  // Fold sim's per-card stats into the running season totals so the
+  // leaderboard reflects the whole league, not just the player's
+  // own games.
+  mergeGameStats({ batters: sim.stats.batters, pitchers: sim.stats.pitchers });
+  return {
+    awayRuns: sim.awayRuns,
+    homeRuns: sim.homeRuns,
+    winner: sim.winner,
+  };
 }
 
 // Convenience accessor — the next un-played game involving the player.

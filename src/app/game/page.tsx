@@ -55,6 +55,15 @@ import {
   saveActiveSeasonGame,
 } from "@/lib/activeGame";
 import { pickReliever } from "@/lib/bullpen";
+import {
+  EMPTY_BATTER_STATS,
+  EMPTY_PITCHER_STATS,
+  applyOutcomeToBatter,
+  applyOutcomeToPitcher,
+  type BatterStats,
+  type PitcherStats,
+} from "@/lib/stats";
+import { mergeGameStats } from "@/lib/seasonStats";
 import { getEffectiveRoster } from "@/lib/rosters";
 import { getOverrideFor } from "@/lib/playerRoster";
 import { getTeamBySlug } from "@/lib/teams";
@@ -559,6 +568,27 @@ function Play({
     [game],
   );
 
+  // Per-card stats accumulator for THIS live game. We update it
+  // synchronously inside tapBatter (using the closure-captured state)
+  // so we never double-count under React strict-mode double-renders.
+  // On game-over the entire blob gets folded into the running season
+  // totals.
+  const gameStatsRef = useRef<{
+    batters: Record<string, BatterStats>;
+    pitchers: Record<string, PitcherStats>;
+  }>({ batters: {}, pitchers: {} });
+
+  // Wrap the parent onEnd so that whenever a finished game ends, we
+  // first fold the game's per-card stats into the running season
+  // totals. Abandoning mid-game (End button before the 9th out) does
+  // NOT merge — the game wasn't completed.
+  const handleEnd = (final: GameState): void => {
+    if (checkGameOver(final)) {
+      mergeGameStats(gameStatsRef.current);
+    }
+    onEnd(final);
+  };
+
   // Persist on every game state change. We use a ref so we don't have to
   // memoise onPersist in every parent — the latest callback always wins.
   const persistRef = useRef(onPersist);
@@ -603,6 +633,27 @@ function Play({
         const justBatted = batter;
         const preBases = game.bases;
         setStage({ kind: "field", outcome, justBatted, preBases });
+
+        // Record stats for this at-bat. Compute runsScored from the
+        // closure-captured `game` (no other update can race in here —
+        // the swing-settled stage waits for the timer alone).
+        const newGame = applyAtBatOutcome(game, outcome);
+        const battingSide: "home" | "away" =
+          game.half === "top" ? "away" : "home";
+        const runsScored =
+          newGame[battingSide].runs - game[battingSide].runs;
+        const stats = gameStatsRef.current;
+        stats.batters[justBatted.id] = applyOutcomeToBatter(
+          stats.batters[justBatted.id] ?? EMPTY_BATTER_STATS,
+          outcome,
+          runsScored,
+        );
+        stats.pitchers[pitcher.id] = applyOutcomeToPitcher(
+          stats.pitchers[pitcher.id] ?? EMPTY_PITCHER_STATS,
+          outcome,
+          runsScored,
+        );
+
         setGame((g) => applyAtBatOutcome(g, outcome));
       }, SWING_HOLD_MS);
     }, DICE_TUMBLE_MS);
@@ -729,7 +780,7 @@ function Play({
       <header className="shrink-0 mb-2">
         <div className="flex items-center justify-between mb-1.5">
           <button
-            onClick={() => onEnd(game)}
+            onClick={() => handleEnd(game)}
             className="rounded-full border border-zinc-800 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400 hover:border-zinc-600 hover:text-zinc-100"
           >
             End
@@ -774,7 +825,7 @@ function Play({
           outcome={stage.outcome}
           justBatted={stage.justBatted}
           onNext={nextBatter}
-          onPlayAgain={() => onEnd(game)}
+          onPlayAgain={() => handleEnd(game)}
         />
       ) : (
         <TwoCardLayout

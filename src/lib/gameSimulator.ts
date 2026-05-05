@@ -13,8 +13,25 @@ import {
 } from "@/lib/gameState";
 import type { EffectiveRoster } from "@/types/roster";
 import { pickReliever } from "@/lib/bullpen";
+import {
+  EMPTY_BATTER_STATS,
+  EMPTY_PITCHER_STATS,
+  applyOutcomeToBatter,
+  applyOutcomeToPitcher,
+  type BatterStats,
+  type PitcherStats,
+} from "@/lib/stats";
 import type { Team } from "@/types/team";
 import type { GameResult } from "@/types/schedule";
+
+export type SimulationResult = GameResult & {
+  // Per-card stats accumulated during this simulated game. Caller
+  // (season.ts) merges into the running season totals.
+  stats: {
+    batters: Record<string, BatterStats>;
+    pitchers: Record<string, PitcherStats>;
+  };
+};
 
 // Maximum at-bats before we bail out. A normal 9-inning game runs ~80 at-bats;
 // extras can push higher, but this guards against any pathological state where
@@ -43,11 +60,14 @@ export function simulateGame(
   awayRoster: EffectiveRoster,
   homeTeam: Team,
   homeRoster: EffectiveRoster,
-): GameResult {
+): SimulationResult {
   let state: GameState = startGame(
     setupFromRoster(awayTeam, awayRoster),
     setupFromRoster(homeTeam, homeRoster),
   );
+
+  const batterStats: Record<string, BatterStats> = {};
+  const pitcherStats: Record<string, PitcherStats> = {};
 
   for (let i = 0; i < SAFETY_AT_BATS; i++) {
     if (checkGameOver(state)) break;
@@ -58,7 +78,24 @@ export function simulateGame(
     const batter = currentBatter(state);
     const fatigue = pitcherFatigue(fieldingTeam(state), state.inning);
     const { outcome } = playAtBat(pitcher, batter, Math.random, fatigue);
-    state = applyAtBatOutcome(state, outcome);
+
+    const newState = applyAtBatOutcome(state, outcome);
+    const battingSide: "home" | "away" = state.half === "top" ? "away" : "home";
+    const runsScored =
+      newState[battingSide].runs - state[battingSide].runs;
+
+    batterStats[batter.id] = applyOutcomeToBatter(
+      batterStats[batter.id] ?? EMPTY_BATTER_STATS,
+      outcome,
+      runsScored,
+    );
+    pitcherStats[pitcher.id] = applyOutcomeToPitcher(
+      pitcherStats[pitcher.id] ?? EMPTY_PITCHER_STATS,
+      outcome,
+      runsScored,
+    );
+
+    state = newState;
   }
 
   const winner = state.home.runs > state.away.runs ? "home" : "away";
@@ -66,6 +103,7 @@ export function simulateGame(
     awayRuns: state.away.runs,
     homeRuns: state.home.runs,
     winner,
+    stats: { batters: batterStats, pitchers: pitcherStats },
   };
 }
 

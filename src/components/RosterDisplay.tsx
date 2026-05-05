@@ -6,6 +6,16 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import cardsData from "@data/cards.json";
 import { RARITY_TEXT_CLASS, getCardRarity } from "@/lib/rarity";
 import {
+  formatAvg,
+  formatEra,
+  formatIp,
+} from "@/lib/stats";
+import {
+  getSeasonStatsServerSnapshot,
+  getSeasonStatsSnapshot,
+  subscribe as subscribeSeasonStats,
+} from "@/lib/seasonStats";
+import {
   getCollectionServerSnapshot,
   getCollectionSnapshot,
   subscribe as subscribeCollection,
@@ -72,6 +82,13 @@ export function RosterDisplay({
     subscribeCollection,
     getCollectionSnapshot,
     getCollectionServerSnapshot,
+  );
+  // Subscribe to season stats so the per-card stat lines re-render
+  // after each game.
+  const seasonStats = useSyncExternalStore(
+    subscribeSeasonStats,
+    getSeasonStatsSnapshot,
+    getSeasonStatsServerSnapshot,
   );
 
   const isPlayerTeam = !!season && season.playerTeamSlug === teamSlug;
@@ -189,6 +206,7 @@ export function RosterDisplay({
               slotLabel={String(idx + 1)}
               accentColor={accentColor}
               editing={editing && isPlayerTeam}
+              seasonStats={seasonStats}
               onTap={() => handleSlotTap(card, { kind: "batter", index: idx })}
             />
           ))}
@@ -207,6 +225,7 @@ export function RosterDisplay({
               slotLabel="SP"
               accentColor={accentColor}
               editing={editing && isPlayerTeam}
+              seasonStats={seasonStats}
               onTap={() => handleSlotTap(activeSp, { kind: "sp" })}
             />
           </div>
@@ -228,6 +247,7 @@ export function RosterDisplay({
               slotLabel={`RP${idx + 1}`}
               accentColor={accentColor}
               editing={editing && isPlayerTeam}
+              seasonStats={seasonStats}
               onTap={() => handleSlotTap(card, { kind: "rp", index: idx })}
             />
           ))}
@@ -254,15 +274,32 @@ function RosterSlot({
   slotLabel,
   accentColor,
   editing,
+  seasonStats,
   onTap,
 }: {
   card: CardType;
   slotLabel: string;
   accentColor: string;
   editing: boolean;
+  seasonStats: import("@/lib/seasonStats").SeasonStats;
   onTap: () => void;
 }) {
   const rarity = getCardRarity(card);
+
+  // Tiny stat line under the card. Batters: AB · H · AVG. Pitchers:
+  // IP · K · ERA. Falls back to "—" when the card hasn't appeared in
+  // a game yet this season.
+  const statLine = (() => {
+    if (card.cardType === "batter") {
+      const s = seasonStats.batters[card.id];
+      if (!s || s.pa === 0) return null;
+      return `${s.ab} AB · ${s.h} H · ${formatAvg(s)}`;
+    }
+    const s = seasonStats.pitchers[card.id];
+    if (!s || s.bf === 0) return null;
+    return `${formatIp(s)} IP · ${s.k} K · ${formatEra(s)} ERA`;
+  })();
+
   return (
     <div className="relative flex flex-col gap-1.5">
       <div className="absolute -top-1 -left-1 z-10 pointer-events-none">
@@ -305,6 +342,11 @@ function RosterSlot({
       >
         {card.points} pts
       </div>
+      {statLine && (
+        <div className="text-[9px] text-zinc-500 tabular-nums truncate">
+          {statLine}
+        </div>
+      )}
     </div>
   );
 }
