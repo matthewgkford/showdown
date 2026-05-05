@@ -1382,33 +1382,98 @@ function GameOverPanel({
   onPlayAgain: () => void;
 }) {
   const winningTeam = winner === "home" ? game.home.team : game.away.team;
+  const winColor = getTeamDisplayColor(winningTeam);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 320, damping: 24 }}
-      className="shrink-0 flex flex-col items-center gap-2"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md px-4 py-6"
+      // Tap outside the card → dismiss (same as the main button).
+      onClick={onPlayAgain}
     >
-      <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-        Final
-      </div>
-      <div
-        className="text-lg sm:text-xl font-bold tracking-tight"
-        style={{ color: getTeamDisplayColor(winningTeam) }}
+      <motion.div
+        initial={{ scale: 0.85, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 24, delay: 0.05 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-sm rounded-3xl border bg-zinc-950 px-6 py-8 sm:px-8 sm:py-10 flex flex-col items-center gap-4"
+        style={{
+          borderColor: `${winColor}55`,
+          boxShadow: `0 0 60px ${winColor}33`,
+          background: `radial-gradient(ellipse at top, ${winColor}22 0%, rgb(9,9,11) 70%)`,
+        }}
       >
-        {winningTeam.name} win
-      </div>
-      <div className="flex items-center gap-3 font-mono">
-        <FinalScore team={game.away} winning={winner === "away"} />
-        <span className="text-zinc-700">·</span>
-        <FinalScore team={game.home} winning={winner === "home"} />
-      </div>
-      <button
-        onClick={onPlayAgain}
-        className="mt-1 rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
-      >
-        Play again
-      </button>
+        <div className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">
+          Final
+        </div>
+
+        {/* Logo — biggest visual, bounces in. */}
+        <motion.div
+          initial={{ scale: 0.3, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 240,
+            damping: 14,
+            delay: 0.15,
+          }}
+          className="rounded-2xl p-1 ring-4"
+          style={{
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ["--tw-ring-color" as any]: `${winColor}80`,
+            backgroundColor: "rgba(0,0,0,0.4)",
+          }}
+        >
+          <Image
+            src={winningTeam.logos.primary}
+            alt={winningTeam.name}
+            width={320}
+            height={320}
+            priority
+            className="h-32 w-32 sm:h-40 sm:w-40 rounded-xl object-contain"
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ y: 8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, type: "spring", stiffness: 280 }}
+          className="flex flex-col items-center gap-1 text-center"
+        >
+          <div
+            className="text-2xl sm:text-3xl font-black tracking-tight"
+            style={{ color: winColor }}
+          >
+            {winningTeam.name}
+          </div>
+          <div className="text-xs font-bold uppercase tracking-[0.45em] text-zinc-300">
+            Win
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ y: 8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.55, duration: 0.3 }}
+          className="flex items-center gap-3 font-mono mt-1"
+        >
+          <FinalScore team={game.away} winning={winner === "away"} />
+          <span className="text-zinc-700">·</span>
+          <FinalScore team={game.home} winning={winner === "home"} />
+        </motion.div>
+
+        <motion.button
+          initial={{ y: 8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.25 }}
+          onClick={onPlayAgain}
+          className="mt-3 w-full rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
+        >
+          Continue
+        </motion.button>
+      </motion.div>
     </motion.div>
   );
 }
