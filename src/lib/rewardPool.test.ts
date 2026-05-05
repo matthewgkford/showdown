@@ -17,8 +17,12 @@ describe("getRewardPool", () => {
     }
   });
 
-  it("has 51 cards", () => {
-    expect(getRewardPool()).toHaveLength(51);
+  it("has at least 50 cards", () => {
+    // The exact size shifts as new card batches land; the floor matters
+    // (pool needs ≥4 cards for win packs to roll) more than the precise
+    // count. Today's snapshot is 165 — 51 from the original starter
+    // build-out plus the 114 from Batch 7.
+    expect(getRewardPool().length).toBeGreaterThanOrEqual(50);
   });
 
   it("returns the same reference on subsequent calls (cached)", () => {
