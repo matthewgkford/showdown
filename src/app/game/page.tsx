@@ -607,6 +607,26 @@ function Play({
   }
 
   function nextBatter() {
+    // CPU pitcher auto-sub: if the opponent is on the mound and their
+    // current pitcher is fatigued, bring in the next reliever before the
+    // at-bat begins. Mirrors what the headless simulator does for
+    // background games — keeps the live game from punishing the CPU
+    // for not "managing" its bullpen. The player still manages their
+    // own pitcher manually via the Sub modal.
+    if (playerSide !== null) {
+      const upcomingFieldingSide: "home" | "away" =
+        game.half === "top" ? "home" : "away";
+      if (upcomingFieldingSide !== playerSide) {
+        const fielding =
+          upcomingFieldingSide === "home" ? game.home : game.away;
+        const fatigue = pitcherFatigue(fielding, game.inning);
+        if (fatigue > 0 && fielding.bullpen.length > 0) {
+          setGame((g) =>
+            changePitcher(g, upcomingFieldingSide, fielding.bullpen[0].id),
+          );
+        }
+      }
+    }
     setStage({ kind: "intro" });
   }
 
