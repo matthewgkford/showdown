@@ -55,6 +55,7 @@ import {
   saveActiveSeasonGame,
 } from "@/lib/activeGame";
 import { getEffectiveRoster } from "@/lib/rosters";
+import { getOverrideFor } from "@/lib/playerRoster";
 import { getTeamBySlug } from "@/lib/teams";
 import { getTeamDisplayColor } from "@/lib/teamColor";
 import { DICE_TUMBLE_MS, Dice } from "@/components/Dice";
@@ -325,13 +326,21 @@ function buildSeasonGame(
   const homeTeam = getTeamBySlug(homeSlug);
   if (!awayTeam || !homeTeam) return null;
 
+  // Player's customised roster, if any, replaces their default starting
+  // roster — so swapping cards in the team page actually changes the
+  // lineup that takes the field. Opponent rosters always come from the
+  // immutable league design.
+  const playerOverride = getOverrideFor(playerSlug);
+
   const awayRoster = getEffectiveRoster(
     awaySlug,
     awaySlug === playerSlug ? 1 : currentTier,
+    awaySlug === playerSlug ? playerOverride : null,
   );
   const homeRoster = getEffectiveRoster(
     homeSlug,
     homeSlug === playerSlug ? 1 : currentTier,
+    homeSlug === playerSlug ? playerOverride : null,
   );
   if (!awayRoster || !homeRoster) return null;
 

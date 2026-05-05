@@ -3,6 +3,7 @@ import { simulateGame } from "@/lib/gameSimulator";
 import { getEffectiveRoster } from "@/lib/rosters";
 import { rollWinPack } from "@/lib/rewardRoll";
 import { grantReward, newInstanceId } from "@/lib/rewards";
+import { resetPlayerRoster } from "@/lib/playerRoster";
 import { getTeamBySlug } from "@/lib/teams";
 import type { SeasonState } from "@/types/season";
 import type { GameResult, ScheduledGame } from "@/types/schedule";
@@ -123,6 +124,10 @@ export function startSeason(playerTeamSlug: string): SeasonState {
     schedule: generateSchedule(),
   };
   persist();
+  // Drop any roster override left over from a previous team — it's
+  // tied to a specific slug and would be ignored anyway, but clearing
+  // keeps localStorage tidy.
+  resetPlayerRoster();
   notify();
   return seasonState;
 }

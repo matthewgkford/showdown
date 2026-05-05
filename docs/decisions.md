@@ -215,6 +215,14 @@ The "good card" is sourced from a reward pool defined as cards not already in an
 
 ---
 
+## 2026-05-05: Roster customisation as a separate override layer (Phase 8 Stage 6)
+
+**Decision**: The player's customised roster lives in its own localStorage key (`showdown:player-roster`) as a `Roster` object that mirrors the shape from `data/rosters.json`. It's null until the player makes their first swap, at which point we copy the default for their team and start mutating that. The default rosters in `data/rosters.json` are never touched.
+
+**Reasoning**: Considered storing the override as a sparse "diffs against default" record (e.g., `{ batters: { 3: "newCardId" } }`). Rejected because: (a) it complicates reads — every accessor needs to merge defaults + diffs; (b) it doesn't save real space (max 13 ids vs the diff size); (c) the immutable default is the source of truth for "starter-tier feel" and we want the override to be self-contained so future logic (e.g., compare your roster vs. starter for handicap matchmaking) can read it directly. A full-shape override is the simpler, faster, more legible thing.
+
+---
+
 ## 2026-05-05: Win pack formula — 1 hero + 3 fillers from the 51-card pool (Phase 8 Stage 5)
 
 **Decision**: Each win drops a 4-card pack: 1 "hero" slot biased 35% legendary / 65% rare, and 3 "filler" slots drawn uniformly from the remainder of the reward pool. Because the current pool is entirely rare/legendary, fillers will be rare/legendary too — that's intentional for the small initial card set; the player needs meaningful upgrades to feel progression.

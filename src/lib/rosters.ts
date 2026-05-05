@@ -24,12 +24,18 @@ export function getRoster(teamSlug: string): Roster | null {
 // season game are fetched with the player's current league tier so the
 // powerLevel multiplier from leagues.json applies.
 //
+// `override` lets the caller substitute a roster (e.g., the player's
+// customised lineup from lib/playerRoster) instead of the default starting
+// roster. The team metadata (slug) still comes from teams.json — only the
+// card slots get replaced.
+//
 // Returns null if the roster doesn't exist or any card id fails to resolve.
 export function getEffectiveRoster(
   teamSlug: string,
   leagueTier: number,
+  override?: Roster | null,
 ): EffectiveRoster | null {
-  const roster = getRoster(teamSlug);
+  const roster = override ?? getRoster(teamSlug);
   if (!roster) return null;
   const league = getLeagueByTier(leagueTier);
   const power = league?.powerLevel ?? 1.0;
@@ -55,8 +61,15 @@ export function getEffectiveRoster(
 // the /standings page. Note: powerLevel scaling does NOT change the card's
 // `points` field, so this returns a tier-independent number — to get a
 // "league-power-adjusted" score we multiply by the league's powerLevel.
-export function getRosterPower(teamSlug: string, leagueTier: number): number {
-  const roster = getRoster(teamSlug);
+//
+// `override` works the same as in getEffectiveRoster — pass the player's
+// customised roster to score it instead of the default.
+export function getRosterPower(
+  teamSlug: string,
+  leagueTier: number,
+  override?: Roster | null,
+): number {
+  const roster = override ?? getRoster(teamSlug);
   if (!roster) return 0;
   const league = getLeagueByTier(leagueTier);
   const power = league?.powerLevel ?? 1.0;

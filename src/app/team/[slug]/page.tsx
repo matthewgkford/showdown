@@ -104,6 +104,7 @@ export default async function TeamPage(props: {
         </section>
 
         <RosterDisplay
+          teamSlug={slug}
           batters={batters}
           sp={spCard}
           bullpen={bullpen}
