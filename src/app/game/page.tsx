@@ -1358,6 +1358,26 @@ function FieldView({
   const isAnimating = frameIdx < frames.length - 1;
   const visible = frames[frameIdx].filter((r) => r.pos !== "scored");
 
+  // Brief hold on the field after a 3rd-out animation finishes, before
+  // the half-inning scorecard takes over. Lets the OUT stamp land and
+  // the empty diamond breathe instead of the scorecard immediately
+  // covering everything.
+  const POST_OUT_HOLD_MS = 1100;
+  const [holdDone, setHoldDone] = useState(false);
+  useEffect(() => {
+    if (isAnimating) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHoldDone(false);
+      return;
+    }
+    if (!halfEnded) {
+      setHoldDone(true);
+      return;
+    }
+    const t = setTimeout(() => setHoldDone(true), POST_OUT_HOLD_MS);
+    return () => clearTimeout(t);
+  }, [isAnimating, halfEnded]);
+
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-2">
       <motion.div
@@ -1388,7 +1408,7 @@ function FieldView({
 
       <Field runners={visible} outcome={outcome} preBases={preBases} />
 
-      {isAnimating ? (
+      {isAnimating || (halfEnded && !holdDone) ? (
         <div className="h-10" aria-hidden />
       ) : gameOver ? (
         <GameOverPanel
