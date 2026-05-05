@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { GameState, TeamState } from "@/lib/gameState";
 import { getTeamDisplayColor } from "@/lib/teamColor";
 
@@ -46,28 +47,35 @@ function TeamScore({
   batting: boolean;
   reverse?: boolean;
 }) {
-  // Always color the team name with its display colour — accent for most
-  // teams, light for teams whose accent is too dark for the dark theme.
-  // The "currently batting" cue is now a tinted dot beside the name.
+  // The "currently batting" cue is a thin glow on the logo — uses the
+  // team's display colour (accent for most, light for teams whose accent
+  // is too dark on the zinc-950 background).
   const displayColor = getTeamDisplayColor(team.team);
-  const dot = (
+  const logo = (
     <span
-      className="h-1.5 w-1.5 rounded-full shrink-0"
-      style={{ backgroundColor: batting ? displayColor : "transparent" }}
-      aria-hidden
-    />
+      className={`shrink-0 inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-md ring-1 transition-colors ${
+        batting ? "bg-zinc-900/80" : "bg-transparent"
+      }`}
+      style={{
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ["--tw-ring-color" as any]: batting ? displayColor : "transparent",
+      }}
+      aria-label={team.team.name}
+    >
+      <Image
+        src={team.team.logos.primary}
+        alt=""
+        width={48}
+        height={48}
+        className="h-full w-full rounded-md object-contain"
+      />
+    </span>
   );
   return (
-    <div className="flex items-center gap-1 min-w-0">
-      {!reverse && dot}
-      <span
-        className="font-semibold truncate"
-        style={{ color: displayColor }}
-      >
-        {team.team.shortName}
-      </span>
+    <div className="flex items-center gap-1.5 min-w-0">
+      {!reverse && logo}
       <span className="text-zinc-100 font-bold tabular-nums">{team.runs}</span>
-      {reverse && dot}
+      {reverse && logo}
     </div>
   );
 }
