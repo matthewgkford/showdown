@@ -228,6 +228,12 @@ export default function SeasonPage() {
               >
                 Roster
               </Link>
+              <Link
+                href="/season/stats"
+                className="rounded-full border border-zinc-700 px-5 py-2 text-center text-xs text-zinc-300 hover:border-zinc-500"
+              >
+                Stats
+              </Link>
             </div>
           </section>
         )}
