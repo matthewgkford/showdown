@@ -61,6 +61,7 @@ import { getTeamDisplayColor } from "@/lib/teamColor";
 import { DICE_TUMBLE_MS, Dice } from "@/components/Dice";
 import { BaseDiamond } from "@/components/BaseDiamond";
 import { Scoreboard } from "@/components/Scoreboard";
+import { Scorecard } from "@/components/Scorecard";
 
 const cards = cardsData as CardType[];
 const allBatters = cards.filter((c): c is BatterCard => c.cardType === "batter");
@@ -1377,15 +1378,21 @@ function FieldView({
       {isAnimating ? (
         <div className="h-10" aria-hidden />
       ) : gameOver ? (
-        <GameOverPanel game={game} winner={gameOver.winner} onPlayAgain={onPlayAgain} />
+        <GameOverPanel
+          game={game}
+          winner={gameOver.winner}
+          onPlayAgain={onPlayAgain}
+        />
+      ) : halfEnded ? (
+        // Between halves: full-screen linescore takes over until the
+        // player taps Continue (or the backdrop) to start the next half.
+        <Scorecard state={game} onContinue={onNext} />
       ) : (
         <button
           onClick={onNext}
           className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
         >
-          {halfEnded
-            ? `${game.half === "top" ? "Top" : "Bottom"} of ${game.inning}${game.inning > 9 ? " (extras)" : ""} →`
-            : "Next batter →"}
+          Next batter →
         </button>
       )}
     </div>

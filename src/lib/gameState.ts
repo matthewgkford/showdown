@@ -18,7 +18,12 @@ export type TeamState = {
   bullpen: PitcherCard[]; // available relievers
   pitcherStartedInning: number; // inning the current pitcher entered the game
   battingIndex: number; // 0..lineup.length-1, who's up next
-  runs: number;
+  runs: number; // total runs across all innings (sum of inningRuns)
+  // Runs scored in each inning, 0-indexed (innings[0] = 1st inning).
+  // Sparse: a team with no runs through inning 3 will have [0,0,0]; a
+  // team that hasn't batted yet in an inning has nothing at that index.
+  // Used by the half-inning scorecard to draw a traditional linescore.
+  inningRuns: number[];
 };
 
 export type GameState = {
@@ -46,9 +51,35 @@ export function startGame(away: TeamSetup, home: TeamSetup): GameState {
     half: "top",
     outs: 0,
     bases: EMPTY_BASES,
-    away: { ...away, pitcherStartedInning: 1, battingIndex: 0, runs: 0 },
-    home: { ...home, pitcherStartedInning: 1, battingIndex: 0, runs: 0 },
+    away: {
+      ...away,
+      pitcherStartedInning: 1,
+      battingIndex: 0,
+      runs: 0,
+      inningRuns: [],
+    },
+    home: {
+      ...home,
+      pitcherStartedInning: 1,
+      battingIndex: 0,
+      runs: 0,
+      inningRuns: [],
+    },
   };
+}
+
+// Add `runs` to the inningIdx slot of the given inningRuns array,
+// padding with zeros up to that slot. Returns a new array (caller is
+// responsible for substituting it into team state).
+function addInningRuns(
+  inningRuns: number[],
+  inningIdx: number,
+  runs: number,
+): number[] {
+  const out = [...inningRuns];
+  while (out.length <= inningIdx) out.push(0);
+  out[inningIdx] += runs;
+  return out;
 }
 
 export function currentBatter(state: GameState): BatterCard {
@@ -177,6 +208,10 @@ export function applyAtBatOutcome(state: GameState, outcome: Outcome): GameState
     ...team,
     battingIndex: (team.battingIndex + 1) % team.lineup.length,
     runs: team.runs + runsScored,
+    inningRuns:
+      runsScored > 0
+        ? addInningRuns(team.inningRuns ?? [], state.inning - 1, runsScored)
+        : team.inningRuns ?? [],
   };
 
   return {

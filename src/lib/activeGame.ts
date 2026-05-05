@@ -30,6 +30,20 @@ function readJson<T>(key: string): T | null {
   }
 }
 
+// inningRuns landed in TeamState mid-development, so any active game
+// saved before the field existed needs to be patched on read. Defaulting
+// to [] is safe — applyAtBatOutcome will fill it in from the next at-bat.
+function migrateGameState(state: GameState): GameState {
+  if (!state.away.inningRuns || !state.home.inningRuns) {
+    return {
+      ...state,
+      away: { ...state.away, inningRuns: state.away.inningRuns ?? [] },
+      home: { ...state.home, inningRuns: state.home.inningRuns ?? [] },
+    };
+  }
+  return state;
+}
+
 function writeJson(key: string, value: unknown): void {
   if (typeof window === "undefined") return;
   try {
@@ -51,7 +65,9 @@ function remove(key: string): void {
 // ─── Season slot ──────────────────────────────────────────────────────
 
 export function getActiveSeasonGame(): SeasonGameSnapshot | null {
-  return readJson<SeasonGameSnapshot>(SEASON_KEY);
+  const snap = readJson<SeasonGameSnapshot>(SEASON_KEY);
+  if (!snap) return null;
+  return { ...snap, state: migrateGameState(snap.state) };
 }
 
 export function saveActiveSeasonGame(
@@ -77,7 +93,9 @@ export function clearActiveSeasonGame(): void {
 // ─── Exhibition slot ──────────────────────────────────────────────────
 
 export function getActiveExhibitionGame(): ExhibitionGameSnapshot | null {
-  return readJson<ExhibitionGameSnapshot>(EXHIBITION_KEY);
+  const snap = readJson<ExhibitionGameSnapshot>(EXHIBITION_KEY);
+  if (!snap) return null;
+  return { ...snap, state: migrateGameState(snap.state) };
 }
 
 export function saveActiveExhibitionGame(

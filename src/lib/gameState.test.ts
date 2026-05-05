@@ -134,6 +134,55 @@ describe("startGame", () => {
     const g = freshGame();
     expect(currentPitcher(g)).toBe(fakePitcher);
   });
+
+  it("starts both teams with empty inningRuns arrays", () => {
+    const g = freshGame();
+    expect(g.away.inningRuns).toEqual([]);
+    expect(g.home.inningRuns).toEqual([]);
+  });
+});
+
+describe("inningRuns tracking", () => {
+  it("homer in 1st bumps away.inningRuns[0] by 1", () => {
+    const g = applyAtBatOutcome(freshGame(), "homer");
+    expect(g.away.inningRuns[0]).toBe(1);
+    expect(g.away.runs).toBe(1);
+  });
+
+  it("a 3-run homer with bases loaded credits 4 to the inning", () => {
+    const g0: GameState = {
+      ...freshGame(),
+      bases: {
+        first: batter("r1"),
+        second: batter("r2"),
+        third: batter("r3"),
+      },
+    };
+    const g = applyAtBatOutcome(g0, "homer");
+    expect(g.away.inningRuns[0]).toBe(4);
+    expect(g.away.runs).toBe(4);
+  });
+
+  it("runs accumulate to the correct inning index across innings", () => {
+    let g = freshGame();
+    // Top 1st: away homer
+    g = applyAtBatOutcome(g, "homer");
+    // 3 outs to flip
+    g = applyAtBatOutcome(g, "so");
+    g = applyAtBatOutcome(g, "so");
+    g = applyAtBatOutcome(g, "so");
+    // Bottom 1st: home single, then 3 outs
+    g = applyAtBatOutcome(g, "single");
+    g = applyAtBatOutcome(g, "so");
+    g = applyAtBatOutcome(g, "so");
+    g = applyAtBatOutcome(g, "so");
+    // Top 2nd: away homer
+    g = applyAtBatOutcome(g, "homer");
+
+    expect(g.away.inningRuns[0]).toBe(1);
+    expect(g.away.inningRuns[1]).toBe(1);
+    expect(g.home.inningRuns[0] ?? 0).toBe(0);
+  });
 });
 
 describe("single", () => {
