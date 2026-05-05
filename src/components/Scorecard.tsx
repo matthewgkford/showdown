@@ -7,12 +7,11 @@ import { getTeamDisplayColor } from "@/lib/teamColor";
 
 const REGULAR_INNINGS = 9;
 
-// Half-inning scorecard. Full-screen overlay shown between halves —
-// classic linescore (R + H per team, runs broken out per inning) styled
-// like a stadium scoreboard: deep navy panel with amber LED-style
-// digits, subtle pinstripes, a thicker double-frame border, and a
-// glowing amber header for "Mid Nth" / "End Nth". The cell that just
-// scored gets a stronger amber glow.
+// Half-inning scorecard. Full-screen overlay shown between halves.
+// Visual direction: clean broadcast / box-score — charcoal panel,
+// sharp typography, team colors as a vertical accent strip and on the
+// big R total. No LED glow, no pinstripes; everything in service of
+// the numbers.
 export function Scorecard({
   state,
   onContinue,
@@ -21,17 +20,15 @@ export function Scorecard({
   onContinue: () => void;
 }) {
   // After the 3rd out lands, applyAtBatOutcome flips half + bumps the
-  // inning counter. So at this moment:
-  //   state.half === "bottom" → top of state.inning just ended (mid Nth)
-  //   state.half === "top"    → bottom of (state.inning - 1) just ended
-  //                              (end of (N-1)th)
+  // inning. So at this moment:
+  //   half === "bottom" → top of state.inning just ended (mid Nth)
+  //   half === "top"    → bottom of (state.inning - 1) just ended
+  //                        (end of (N-1)th)
   const headerLabel =
     state.half === "bottom"
       ? `Mid ${ordinal(state.inning)}`
       : `End ${ordinal(state.inning - 1)}`;
 
-  // How many inning columns to draw. Always at least 9; expand if we're
-  // in extras so the trailing innings are visible.
   const inningsToShow = Math.max(
     REGULAR_INNINGS,
     state.half === "bottom" ? state.inning : state.inning - 1,
@@ -40,7 +37,6 @@ export function Scorecard({
   const awayCompletedIdx =
     (state.half === "bottom" ? state.inning : state.inning - 1) - 1;
   const homeCompletedIdx = state.inning - 1 - 1;
-
   const justPlayedAway = state.half === "bottom" ? state.inning - 1 : null;
   const justPlayedHome = state.half === "top" ? state.inning - 2 : null;
 
@@ -49,104 +45,74 @@ export function Scorecard({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-30 flex items-center justify-center bg-black/92 backdrop-blur-md px-4 py-6"
+      transition={{ duration: 0.18 }}
+      className="fixed inset-0 z-30 flex items-center justify-center bg-black/85 backdrop-blur-md px-4 py-6"
       onClick={onContinue}
     >
       <motion.div
-        initial={{ scale: 0.94, y: 12 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 320, damping: 26 }}
+        initial={{ y: 16, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 16, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md flex flex-col items-stretch gap-5"
       >
-        {/* Glowing header label, like the inning indicator on a stadium
-            board. */}
+        {/* Slim header label, no ornament. */}
         <div className="text-center">
-          <div
-            className="text-[11px] sm:text-xs font-black uppercase tracking-[0.55em] text-amber-300 inline-block"
-            style={{
-              textShadow:
-                "0 0 12px rgba(251,191,36,0.6), 0 0 4px rgba(251,191,36,0.8)",
-            }}
-          >
-            ◆ {headerLabel} ◆
-          </div>
+          <span className="text-[11px] font-bold uppercase tracking-[0.5em] text-zinc-400">
+            {headerLabel}
+          </span>
         </div>
 
-        {/* Outer frame: amber-tinted border on a near-black panel with
-            subtle vertical pinstripes for "scoreboard" texture. */}
+        {/* Panel */}
         <div
-          className="relative rounded-2xl p-[2px] shadow-2xl shadow-black/70"
+          className="overflow-hidden rounded-2xl border border-zinc-800/80 shadow-2xl shadow-black/60"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(251,191,36,0.4), rgba(251,191,36,0.1) 50%, rgba(251,191,36,0.4))",
+            backgroundImage:
+              "linear-gradient(180deg, #0c0c10 0%, #07070a 100%)",
           }}
         >
-          <div
-            className="rounded-[14px] p-3 sm:p-4"
-            style={{
-              backgroundColor: "#070b14",
-              backgroundImage:
-                "repeating-linear-gradient(90deg, transparent 0, transparent 22px, rgba(251,191,36,0.04) 22px, rgba(251,191,36,0.04) 23px)",
-            }}
-          >
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="w-8 sm:w-9" />
-                  {Array.from({ length: inningsToShow }, (_, i) => (
-                    <th
-                      key={i}
-                      className="px-0 py-1 text-[9px] sm:text-[10px] font-bold tabular-nums tracking-wider"
-                      style={{ color: "rgba(251,191,36,0.6)" }}
-                    >
-                      {i + 1}
-                    </th>
-                  ))}
-                  <th
-                    className="w-7 sm:w-9 px-0.5 py-1 text-[10px] sm:text-xs font-black tracking-[0.15em]"
-                    style={{
-                      color: "#fbbf24",
-                      borderLeft: "2px solid rgba(251,191,36,0.35)",
-                    }}
-                  >
-                    R
-                  </th>
-                  <th
-                    className="w-7 sm:w-9 px-0.5 py-1 text-[10px] sm:text-xs font-black tracking-[0.15em]"
-                    style={{
-                      color: "#fbbf24",
-                      borderLeft: "1px solid rgba(251,191,36,0.18)",
-                    }}
-                  >
-                    H
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <TeamRow
-                  team={state.away}
-                  inningsToShow={inningsToShow}
-                  completedIdx={awayCompletedIdx}
-                  justPlayedIdx={justPlayedAway}
-                />
-                <TeamRow
-                  team={state.home}
-                  inningsToShow={inningsToShow}
-                  completedIdx={homeCompletedIdx}
-                  justPlayedIdx={justPlayedHome}
-                  isLast
-                />
-              </tbody>
-            </table>
+          {/* Header strip */}
+          <div className="flex items-stretch border-b border-zinc-800/80 text-zinc-500">
+            <div className="w-10 sm:w-12" />
+            <div className="flex-1 grid"
+                 style={{ gridTemplateColumns: `repeat(${inningsToShow}, minmax(0, 1fr))` }}>
+              {Array.from({ length: inningsToShow }, (_, i) => (
+                <div
+                  key={i}
+                  className="px-1 py-2 text-center text-[10px] font-semibold tracking-wider tabular-nums"
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+            <div className="w-10 sm:w-11 px-1 py-2 text-center text-[10px] font-bold tracking-[0.15em] text-zinc-300 border-l border-zinc-800/80">
+              R
+            </div>
+            <div className="w-10 sm:w-11 px-1 py-2 text-center text-[10px] font-bold tracking-[0.15em] text-zinc-500 border-l border-zinc-800/60">
+              H
+            </div>
           </div>
+
+          <TeamRow
+            team={state.away}
+            inningsToShow={inningsToShow}
+            completedIdx={awayCompletedIdx}
+            justPlayedIdx={justPlayedAway}
+          />
+          <div className="border-t border-zinc-800/80" />
+          <TeamRow
+            team={state.home}
+            inningsToShow={inningsToShow}
+            completedIdx={homeCompletedIdx}
+            justPlayedIdx={justPlayedHome}
+          />
         </div>
 
         <button
           type="button"
           onClick={onContinue}
-          className="w-full rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
+          className="w-full rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600 transition-colors"
         >
           Continue
         </button>
@@ -160,94 +126,126 @@ function TeamRow({
   inningsToShow,
   completedIdx,
   justPlayedIdx,
-  isLast,
 }: {
   team: TeamState;
   inningsToShow: number;
   completedIdx: number;
   justPlayedIdx: number | null;
-  isLast?: boolean;
 }) {
-  const displayColor = getTeamDisplayColor(team.team);
-  // Slightly amber-tinted off-white for the digits — feels more "LED"
-  // than pure white.
-  const digitColor = "#f5e3b3";
-  const dimColor = "rgba(251,191,36,0.18)";
+  const color = getTeamDisplayColor(team.team);
 
   return (
-    <tr
-      className={isLast ? "" : ""}
-      style={{
-        borderBottom: isLast ? "none" : "1px solid rgba(251,191,36,0.18)",
-      }}
-    >
-      <td
-        className="px-1 py-2"
-        style={{ borderRight: "1px solid rgba(251,191,36,0.12)" }}
-      >
-        <div className="flex items-center justify-center">
-          <Image
-            src={team.team.logos.primary}
-            alt={team.team.name}
-            width={48}
-            height={48}
-            className="h-7 w-7 sm:h-8 sm:w-8 rounded-md object-contain"
-          />
-        </div>
-      </td>
-      {Array.from({ length: inningsToShow }, (_, i) => {
-        const played = i <= completedIdx;
-        const runs = team.inningRuns[i] ?? 0;
-        const justPlayed = i === justPlayedIdx;
-        const showDim = !played;
-        return (
-          <td
-            key={i}
-            className="px-0 py-2 text-center text-base sm:text-lg font-bold tabular-nums"
-            style={{
-              color: showDim
-                ? dimColor
-                : justPlayed
-                  ? "#fbbf24"
-                  : runs > 0
-                    ? digitColor
-                    : "rgba(245,227,179,0.5)",
-              textShadow: justPlayed
-                ? "0 0 14px rgba(251,191,36,0.8), 0 0 4px rgba(251,191,36,1)"
-                : !showDim && runs > 0
-                  ? "0 0 6px rgba(245,227,179,0.35)"
-                  : undefined,
-              borderRight:
-                i === inningsToShow - 1
-                  ? undefined
-                  : "1px solid rgba(251,191,36,0.08)",
-            }}
-          >
-            {played ? runs : "·"}
-          </td>
-        );
-      })}
-      <td
-        className="px-0.5 py-2 text-center text-xl sm:text-2xl font-black tabular-nums"
+    <div className="relative flex items-stretch">
+      {/* Team-color accent strip at the very left of the row. */}
+      <div
+        className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r"
+        style={{ backgroundColor: color }}
+        aria-hidden
+      />
+
+      {/* Logo cell */}
+      <div className="w-10 sm:w-12 flex items-center justify-center px-1 py-3">
+        <Image
+          src={team.team.logos.primary}
+          alt={team.team.name}
+          width={48}
+          height={48}
+          className="h-7 w-7 sm:h-8 sm:w-8 rounded-md object-contain"
+        />
+      </div>
+
+      {/* Inning cells */}
+      <div
+        className="flex-1 grid"
         style={{
-          color: displayColor,
-          textShadow: `0 0 10px ${displayColor}66, 0 0 3px ${displayColor}cc`,
-          borderLeft: "2px solid rgba(251,191,36,0.35)",
+          gridTemplateColumns: `repeat(${inningsToShow}, minmax(0, 1fr))`,
         }}
+      >
+        {Array.from({ length: inningsToShow }, (_, i) => {
+          const played = i <= completedIdx;
+          const runs = team.inningRuns[i] ?? 0;
+          const justPlayed = i === justPlayedIdx;
+          return (
+            <InningCell
+              key={i}
+              played={played}
+              runs={runs}
+              justPlayed={justPlayed}
+              accentColor={color}
+            />
+          );
+        })}
+      </div>
+
+      {/* R total — big, in team color */}
+      <div
+        className="w-10 sm:w-11 flex items-center justify-center px-1 py-3 text-2xl sm:text-3xl font-black tabular-nums border-l border-zinc-800/80"
+        style={{ color }}
       >
         {team.runs}
-      </td>
-      <td
-        className="px-0.5 py-2 text-center text-xl sm:text-2xl font-black tabular-nums"
-        style={{
-          color: digitColor,
-          textShadow: "0 0 8px rgba(245,227,179,0.4), 0 0 2px rgba(245,227,179,0.7)",
-          borderLeft: "1px solid rgba(251,191,36,0.18)",
-        }}
-      >
+      </div>
+
+      {/* H total — bold, neutral */}
+      <div className="w-10 sm:w-11 flex items-center justify-center px-1 py-3 text-lg sm:text-xl font-bold tabular-nums text-zinc-300 border-l border-zinc-800/60">
         {team.hits ?? 0}
-      </td>
-    </tr>
+      </div>
+    </div>
+  );
+}
+
+function InningCell({
+  played,
+  runs,
+  justPlayed,
+  accentColor,
+}: {
+  played: boolean;
+  runs: number;
+  justPlayed: boolean;
+  accentColor: string;
+}) {
+  if (!played) {
+    return (
+      <div className="flex items-center justify-center text-zinc-700 text-base sm:text-lg font-medium tabular-nums">
+        ·
+      </div>
+    );
+  }
+
+  // Just-played cell: tinted background pill with team color, slightly
+  // larger digit. Provides emphasis without leaning on glow effects.
+  if (justPlayed) {
+    return (
+      <div className="flex items-center justify-center">
+        <motion.span
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 380,
+            damping: 22,
+            delay: 0.15,
+          }}
+          className="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md text-base sm:text-lg font-black tabular-nums text-zinc-50"
+          style={{
+            backgroundColor: `${accentColor}26`,
+            boxShadow: `inset 0 0 0 1px ${accentColor}80`,
+          }}
+        >
+          {runs}
+        </motion.span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex items-center justify-center text-base sm:text-lg font-bold tabular-nums ${
+        runs > 0 ? "text-zinc-100" : "text-zinc-500"
+      }`}
+    >
+      {runs}
+    </div>
   );
 }
 
