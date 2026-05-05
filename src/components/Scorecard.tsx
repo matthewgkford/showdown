@@ -256,41 +256,48 @@ function InningCell({
   );
 }
 
-// Pennant bunting hanging from the top of the panel. Each pennant is
-// a small downward triangle clipped from a colored block; they
-// alternate the home team's primary + accent and wave on a slow
-// staggered rhythm so the row feels alive without being noisy.
+// Row of small flags on poles strung across the top of the panel.
+// Each flag hangs from a thin vertical pole and ripples sideways
+// with a staggered, asymmetric flutter — meant to read as wind
+// rather than the metronome wave of bunting. Colors alternate
+// between the home team's primary + accent.
 function Bunting({ homeTeam }: { homeTeam: Team }) {
-  const PENNANT_COUNT = 16;
+  const FLAG_COUNT = 7;
   const colorA = homeTeam.colors.primary;
   const colorB = homeTeam.colors.accent;
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute -top-3 left-3 right-3 flex items-start justify-between"
+      className="pointer-events-none absolute -top-4 left-3 right-3 flex items-start justify-between"
     >
-      {/* Thin string the pennants hang from. */}
-      <div className="absolute top-[1px] left-0 right-0 h-px bg-zinc-700/60" />
-      {Array.from({ length: PENNANT_COUNT }, (_, i) => (
-        <motion.div
-          key={i}
-          initial={{ rotate: 0 }}
-          animate={{ rotate: [-2.5, 2.5, -2.5] }}
-          transition={{
-            duration: 2.6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: i * 0.13,
-          }}
-          style={{
-            backgroundColor: i % 2 === 0 ? colorA : colorB,
-            clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-            width: 11,
-            height: 18,
-            transformOrigin: "top center",
-            opacity: 0.85,
-          }}
-        />
+      {Array.from({ length: FLAG_COUNT }, (_, i) => (
+        <div key={i} className="relative flex items-start">
+          {/* Pole — thin vertical line the flag hangs off of. */}
+          <div className="w-px h-5 bg-zinc-500/70" />
+          {/* Flag — rectangle with a swallowtail V-cut on the right.
+              skewX keyframes give an irregular flutter; rotating
+              durations + delays keep neighbours out of sync. */}
+          <motion.div
+            initial={{ skewX: 0 }}
+            animate={{ skewX: [-4, 5, -2, 4, -4] }}
+            transition={{
+              duration: 2.4 + (i % 3) * 0.35,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.18,
+            }}
+            style={{
+              backgroundColor: i % 2 === 0 ? colorA : colorB,
+              width: 22,
+              height: 12,
+              marginTop: 1,
+              transformOrigin: "left center",
+              clipPath:
+                "polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)",
+              opacity: 0.9,
+            }}
+          />
+        </div>
       ))}
     </div>
   );
