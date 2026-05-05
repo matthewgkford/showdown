@@ -275,25 +275,38 @@ function Bunting({ homeTeam }: { homeTeam: Team }) {
           {/* Pole — thin vertical line the flag hangs off of. */}
           <div className="w-px h-5 bg-zinc-500/70" />
           {/* Flag — rectangle with a swallowtail V-cut on the right.
-              skewX keyframes give an irregular flutter; rotating
-              durations + delays keep neighbours out of sync. */}
+              We animate three things at once to get a real ripple:
+                · skewX: overall horizontal sway
+                · scaleY: subtle vertical breathing
+                · clipPath: the V-cut + outer edges ripple in a wave
+              All staggered so neighbours never sync. */}
           <motion.div
-            initial={{ skewX: 0 }}
-            animate={{ skewX: [-4, 5, -2, 4, -4] }}
+            initial={false}
+            animate={{
+              skewX: [-5, 8, -3, 7, -4, 6, -5],
+              scaleY: [1, 1.06, 0.94, 1.04, 0.97, 1.03, 1],
+              clipPath: [
+                "polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)",
+                "polygon(0 0, 96% 6%, 92% 55%, 100% 92%, 0 100%)",
+                "polygon(0 0, 100% 0, 84% 45%, 98% 100%, 0 100%)",
+                "polygon(0 0, 98% 4%, 90% 50%, 96% 95%, 0 100%)",
+                "polygon(0 0, 100% 2%, 86% 52%, 100% 96%, 0 100%)",
+                "polygon(0 0, 97% 0, 90% 48%, 99% 100%, 0 100%)",
+                "polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)",
+              ],
+            }}
             transition={{
-              duration: 2.4 + (i % 3) * 0.35,
+              duration: 2.6 + (i % 3) * 0.4,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: i * 0.18,
+              delay: i * 0.22,
             }}
             style={{
               backgroundColor: i % 2 === 0 ? colorA : colorB,
-              width: 22,
-              height: 12,
+              width: 24,
+              height: 13,
               marginTop: 1,
               transformOrigin: "left center",
-              clipPath:
-                "polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)",
               opacity: 0.9,
             }}
           />
