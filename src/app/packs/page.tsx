@@ -6,6 +6,7 @@ import packsData from "@data/packs.json";
 import cardsData from "@data/cards.json";
 import type { Card as CardType } from "@/types/card";
 import type { Pack } from "@/types/collection";
+import type { EarnedPack } from "@/types/rewards";
 import { RARITY_TEXT_CLASS, getCardRarity } from "@/lib/rarity";
 import {
   addToCollection,
@@ -15,6 +16,11 @@ import {
   grantPacks,
   subscribe,
 } from "@/lib/collection";
+import {
+  getRewardsServerSnapshot,
+  getRewardsSnapshot,
+  subscribe as subscribeRewards,
+} from "@/lib/rewards";
 
 const allCards = cardsData as CardType[];
 const cardById = new Map(allCards.map((c) => [c.id, c]));
@@ -26,6 +32,11 @@ export default function PacksPage() {
     subscribe,
     getPacksSnapshot,
     getPacksServerSnapshot,
+  );
+  const rewards = useSyncExternalStore(
+    subscribeRewards,
+    getRewardsSnapshot,
+    getRewardsServerSnapshot,
   );
 
   const owned = useMemo(() => {
@@ -44,7 +55,7 @@ export default function PacksPage() {
     return out;
   }, [inv]);
 
-  const totalPacks = owned.reduce((a, p) => a + p.count, 0);
+  const totalPacks = owned.reduce((a, p) => a + p.count, 0) + rewards.length;
 
   function debugOpen(packId: string) {
     const pack = packById.get(packId);
@@ -86,16 +97,37 @@ export default function PacksPage() {
         {totalPacks === 0 ? (
           <EmptyState onGrantStarters={handleGrantStarters} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {owned.map(({ pack, count }) => (
-              <PackTile
-                key={pack.id}
-                pack={pack}
-                count={count}
-                onDebugOpen={() => debugOpen(pack.id)}
-              />
-            ))}
-          </div>
+          <>
+            {rewards.length > 0 && (
+              <section className="mb-8">
+                <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-400">
+                  Season rewards
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {rewards.map((pack) => (
+                    <RewardTile key={pack.instanceId} pack={pack} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {owned.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500">
+                  Starter packs
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {owned.map(({ pack, count }) => (
+                    <PackTile
+                      key={pack.id}
+                      pack={pack}
+                      count={count}
+                      onDebugOpen={() => debugOpen(pack.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </main>
@@ -191,6 +223,66 @@ function PackTile({
           Skip
         </button>
       </div>
+    </article>
+  );
+}
+
+function RewardTile({ pack }: { pack: EarnedPack }) {
+  // Earned packs have their cards baked in at award time. Show the
+  // rarity badge counts as a tease (1 hero + 3 fillers without spoiling
+  // who specifically). Tinted with the player team's accent.
+  const cards = pack.cardIds
+    .map((id) => cardById.get(id))
+    .filter((c): c is CardType => Boolean(c));
+  const rarities = cards.map((c) => getCardRarity(c));
+
+  return (
+    <article
+      className="rounded-2xl border p-4 sm:p-5"
+      style={{
+        borderColor: `${pack.accentColor}55`,
+        backgroundColor: `${pack.accentColor}0d`,
+      }}
+    >
+      <div
+        className="relative mb-3 overflow-hidden rounded-xl"
+        style={{
+          background: `linear-gradient(135deg, ${pack.accentColor}66, ${pack.accentColor}11 60%, transparent)`,
+        }}
+      >
+        <div className="px-4 py-6 sm:py-8">
+          <div
+            className="text-[10px] font-bold uppercase tracking-[0.2em]"
+            style={{ color: pack.accentColor }}
+          >
+            Win reward
+          </div>
+          <div className="mt-1 text-xl sm:text-2xl font-bold tracking-tight">
+            {pack.label}
+          </div>
+          <div className="mt-1 text-xs text-zinc-300/80">
+            {cards.length} cards · 1 hero + {cards.length - 1} fillers
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-1.5 text-[10px]">
+        {rarities.map((r, i) => (
+          <span
+            key={i}
+            className={`rounded bg-zinc-900 px-1.5 py-0.5 capitalize ${RARITY_TEXT_CLASS[r]}`}
+          >
+            {r}
+          </span>
+        ))}
+      </div>
+
+      <Link
+        href={`/packs/earned/${pack.instanceId}/open`}
+        className="block rounded-md bg-emerald-500 px-3 py-2 text-center text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
+      >
+        Open
+      </Link>
     </article>
   );
 }

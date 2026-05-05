@@ -1,6 +1,8 @@
 import { generateSchedule, getNextPlayerGame } from "@/lib/schedule";
 import { simulateGame } from "@/lib/gameSimulator";
 import { getEffectiveRoster } from "@/lib/rosters";
+import { rollWinPack } from "@/lib/rewardRoll";
+import { grantReward, newInstanceId } from "@/lib/rewards";
 import { getTeamBySlug } from "@/lib/teams";
 import type { SeasonState } from "@/types/season";
 import type { GameResult, ScheduledGame } from "@/types/schedule";
@@ -162,6 +164,29 @@ export function recordPlayerGame(
 
   seasonState = { ...seasonState, schedule: updated };
   persist();
+
+  // Win reward: if the player won this game, drop a pack into the
+  // rewards inventory. The pack contents are rolled at award time and
+  // baked in — opening it later just reveals what was already drawn.
+  const playerWon =
+    (seasonState.playerTeamSlug === awaySlug && result.winner === "away") ||
+    (seasonState.playerTeamSlug === homeSlug && result.winner === "home");
+  if (playerWon) {
+    const opponentSlug =
+      seasonState.playerTeamSlug === awaySlug ? homeSlug : awaySlug;
+    const opponent = getTeamBySlug(opponentSlug);
+    const playerTeam = getTeamBySlug(seasonState.playerTeamSlug);
+    grantReward({
+      instanceId: newInstanceId(),
+      earnedAt: new Date().toISOString(),
+      cardIds: rollWinPack(),
+      label: opponent
+        ? `Round ${round} · vs ${opponent.name}`
+        : `Round ${round} win`,
+      accentColor: playerTeam?.colors.accent ?? "#10b981",
+    });
+  }
+
   notify();
   return seasonState;
 }

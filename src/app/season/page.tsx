@@ -8,8 +8,13 @@ import { getCurrentLeague } from "@/lib/leagues";
 import {
   getSeasonServerSnapshot,
   getSeasonSnapshot,
-  subscribe,
+  subscribe as subscribeSeason,
 } from "@/lib/season";
+import {
+  getRewardsServerSnapshot,
+  getRewardsSnapshot,
+  subscribe as subscribeRewards,
+} from "@/lib/rewards";
 import { computeStandings, standingsByDivision } from "@/lib/standings";
 import {
   getAllDivisions,
@@ -24,9 +29,14 @@ const RECENT_COUNT = 5;
 export default function SeasonPage() {
   const router = useRouter();
   const season = useSyncExternalStore(
-    subscribe,
+    subscribeSeason,
     getSeasonSnapshot,
     getSeasonServerSnapshot,
+  );
+  const rewards = useSyncExternalStore(
+    subscribeRewards,
+    getRewardsSnapshot,
+    getRewardsServerSnapshot,
   );
 
   // No season → redirect to picker.
@@ -110,6 +120,37 @@ export default function SeasonPage() {
             ← home
           </Link>
         </header>
+
+        {/* Reward banner — shown when there's at least one unopened win
+            pack. Links to the most recent if there's only one, or the
+            packs page if multiple. */}
+        {rewards.length > 0 && (
+          <Link
+            href={
+              rewards.length === 1
+                ? `/packs/earned/${rewards[rewards.length - 1].instanceId}/open`
+                : "/packs"
+            }
+            className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 hover:border-emerald-400/70 hover:bg-emerald-500/15 transition-colors"
+          >
+            <span className="text-2xl" aria-hidden>
+              🎁
+            </span>
+            <div className="flex-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
+                {rewards.length === 1
+                  ? "Unopened win pack"
+                  : `${rewards.length} unopened win packs`}
+              </div>
+              <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
+                {rewards.length === 1
+                  ? rewards[0].label
+                  : "Tap to view your rewards"}
+              </div>
+            </div>
+            <span className="text-emerald-400 text-sm">→</span>
+          </Link>
+        )}
 
         {/* Hero: team + record */}
         {team && (

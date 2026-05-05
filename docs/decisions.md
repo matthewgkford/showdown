@@ -206,3 +206,19 @@ The "good card" is sourced from a reward pool defined as cards not already in an
 **Reasoning**: Reinforces the design intent from Stage 1 — players grow stronger by collecting better cards from packs (rewards), not by automatic stat inflation. If the player's roster scaled along with opponents, tier progression would be invisible: the relative balance never changes. By holding the player constant, climbing tiers genuinely feels harder, and pack rewards are what bridges the gap.
 
 ---
+
+## 2026-05-05: Win rewards are pre-rolled instances, not curated packs (Phase 8 Stage 5)
+
+**Decision**: Season-win rewards are stored as `EarnedPack` instances under `showdown:rewards` — each instance has its own `instanceId` and a `cardIds` array baked in at award time. The existing `data/packs.json` template + `PacksInventory` (count by template id) system from Phase 7 is unchanged; the two coexist on the /packs page in separate sections.
+
+**Reasoning**: Curated packs have known contents (the same cards every time you open a copy of the "Heavy Hitters" pack). Win rewards are random rolls from a 51-card pool — each instance has unique contents that need to survive across reloads. Forcing this into the curated system would require either making contents random at open time (loses determinism, hard to preview) or generating throwaway template entries (pollutes data/packs.json with hundreds of one-off entries). A separate inventory keyed by instanceId is the cleanest fit.
+
+---
+
+## 2026-05-05: Win pack formula — 1 hero + 3 fillers from the 51-card pool (Phase 8 Stage 5)
+
+**Decision**: Each win drops a 4-card pack: 1 "hero" slot biased 35% legendary / 65% rare, and 3 "filler" slots drawn uniformly from the remainder of the reward pool. Because the current pool is entirely rare/legendary, fillers will be rare/legendary too — that's intentional for the small initial card set; the player needs meaningful upgrades to feel progression.
+
+**Reasoning**: Original spec was "1 rare/legendary + 3 commons" but the reward pool is all elite cards (commons + uncommons live in the starter rosters). Going generous on fillers makes wins feel rewarding in v1. If the meta gets too elite later, easy levers: lower `HERO_LEGENDARY_CHANCE`, swap fillers to draw from `cards.json` instead of the reward pool, or shrink to 2 cards per pack.
+
+---
