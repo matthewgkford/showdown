@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { getCurrentLeague } from "@/lib/leagues";
 import {
   getSeasonServerSnapshot,
@@ -15,6 +15,10 @@ import {
   getRewardsSnapshot,
   subscribe as subscribeRewards,
 } from "@/lib/rewards";
+import {
+  type SeasonGameSnapshot,
+  getActiveSeasonGame,
+} from "@/lib/activeGame";
 import { computeStandings, standingsByDivision } from "@/lib/standings";
 import {
   getAllDivisions,
@@ -45,6 +49,18 @@ export default function SeasonPage() {
       router.replace("/choose-team");
     }
   }, [season, router]);
+
+  // Mid-game snapshot (if any) — used to label the CTA "Continue"
+  // instead of "Play next game" when there's saved progress for the
+  // upcoming match. Reading on mount + whenever season changes catches
+  // both first navigation and the post-game return path.
+  const [activeGame, setActiveGame] = useState<SeasonGameSnapshot | null>(
+    null,
+  );
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveGame(getActiveSeasonGame());
+  }, [season]);
 
   const data = useMemo(() => {
     if (!season) return null;
@@ -185,16 +201,26 @@ export default function SeasonPage() {
                   Season complete
                 </div>
               ) : (
-                <Link
-                  href={
-                    data.nextGame
-                      ? `/game?season=1&round=${data.nextGame.round}&away=${data.nextGame.awaySlug}&home=${data.nextGame.homeSlug}`
-                      : "#"
-                  }
-                  className="rounded-full bg-emerald-500 px-6 py-2.5 text-center text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-500/30 hover:bg-emerald-400"
-                >
-                  Play next game →
-                </Link>
+                (() => {
+                  const isResume =
+                    !!activeGame &&
+                    !!data.nextGame &&
+                    activeGame.round === data.nextGame.round &&
+                    activeGame.awaySlug === data.nextGame.awaySlug &&
+                    activeGame.homeSlug === data.nextGame.homeSlug;
+                  return (
+                    <Link
+                      href={
+                        data.nextGame
+                          ? `/game?season=1&round=${data.nextGame.round}&away=${data.nextGame.awaySlug}&home=${data.nextGame.homeSlug}`
+                          : "#"
+                      }
+                      className="rounded-full bg-emerald-500 px-6 py-2.5 text-center text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-500/30 hover:bg-emerald-400"
+                    >
+                      {isResume ? "Continue →" : "Play next game →"}
+                    </Link>
+                  );
+                })()
               )}
               <Link
                 href={`/team/${team.slug}`}
