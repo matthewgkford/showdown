@@ -107,7 +107,7 @@ export default function SeasonPage() {
 
   return (
     <main
-      className="min-h-[100dvh] bg-zinc-950 text-zinc-100"
+      className="min-h-[100dvh] bg-zinc-950 text-zinc-100 pb-24"
       style={
         team
           ? {

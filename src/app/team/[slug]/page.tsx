@@ -41,7 +41,7 @@ export default async function TeamPage(props: {
 
   return (
     <main
-      className="min-h-screen bg-zinc-950 text-zinc-100"
+      className="min-h-screen bg-zinc-950 text-zinc-100 pb-24"
       style={{
         backgroundImage: `radial-gradient(ellipse 80% 50% at top, ${team.colors.primary}66 0%, transparent 60%)`,
       }}

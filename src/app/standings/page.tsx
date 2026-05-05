@@ -56,7 +56,7 @@ export default function StandingsPage() {
   const seasonStarted = totalGames > 0;
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-4 py-8 sm:px-8">
+    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-4 py-8 sm:px-8 pb-24">
       <div className="mx-auto max-w-3xl">
         <header className="mb-6 flex items-baseline justify-between gap-4">
           <div>

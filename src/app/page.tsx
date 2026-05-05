@@ -17,7 +17,7 @@ export default function Home() {
   const pitchers = cards.filter((c): c is PitcherCard => c.cardType === "pitcher");
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-4 py-8 sm:px-8">
+    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-4 py-8 sm:px-8 pb-24">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-baseline justify-between gap-4">
           <div>
