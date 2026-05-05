@@ -305,12 +305,19 @@ export default function SeasonPage() {
           </div>
         </section>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           <Link
             href="/choose-team"
             className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-2"
           >
             Manage / change team
+          </Link>
+          <span className="text-zinc-700 text-xs hidden sm:inline">·</span>
+          <Link
+            href="/debug/rebalance"
+            className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-2"
+          >
+            Rebalance season
           </Link>
         </div>
       </div>
