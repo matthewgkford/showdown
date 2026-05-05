@@ -103,15 +103,11 @@ export default function SeasonPage() {
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
         <header className="mb-6 flex items-baseline justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
-              {league?.name ?? `Tier ${season.currentLeagueTier}`}
-              {league && (
-                <span className="text-zinc-600">
-                  {" "}
-                  · {league.displayName}
-                </span>
-              )}
-            </p>
+            {league && (
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                {league.displayName}
+              </p>
+            )}
             <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">
               Season
             </h1>

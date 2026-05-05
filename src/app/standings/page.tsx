@@ -61,15 +61,11 @@ export default function StandingsPage() {
         <header className="mb-6 flex items-baseline justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Standings</h1>
-            <p className="mt-1 text-xs uppercase tracking-[0.25em] text-zinc-500">
-              {league?.name ?? `Tier ${tier}`}
-              {league && (
-                <span className="text-zinc-600">
-                  {" "}
-                  · {league.displayName}
-                </span>
-              )}
-            </p>
+            {league && (
+              <p className="mt-1 text-xs uppercase tracking-[0.25em] text-zinc-500">
+                {league.displayName}
+              </p>
+            )}
           </div>
           <Link href="/" className="text-xs text-zinc-400 hover:text-zinc-200">
             ← home
