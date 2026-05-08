@@ -276,8 +276,8 @@ const FLAG_PATHS = [
 // Colors alternate between the home team's primary + accent.
 function Bunting({ homeTeam }: { homeTeam: Team }) {
   const FLAG_COUNT = 7;
-  const colorA = homeTeam.colors.primary;
-  const colorB = homeTeam.colors.accent;
+  const colorA = homeTeam.colors.accent;
+  const colorB = homeTeam.colors.light;
   return (
     <div
       aria-hidden

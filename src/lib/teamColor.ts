@@ -21,12 +21,12 @@ export function getMatchColors(
   home: Team,
   away: Team,
 ): { home: string; away: string } {
-  const homePrimary = home.colors.primary;
-  const awayPrimary = away.colors.primary;
-  if (rgbDistance(homePrimary, awayPrimary) < SIMILAR_THRESHOLD) {
-    return { home: homePrimary, away: away.colors.accent };
+  const homeLight = home.colors.light;
+  const awayLight = away.colors.light;
+  if (rgbDistance(homeLight, awayLight) < SIMILAR_THRESHOLD) {
+    return { home: homeLight, away: away.colors.accent };
   }
-  return { home: homePrimary, away: awayPrimary };
+  return { home: homeLight, away: awayLight };
 }
 
 // Generate a top→bottom gradient pair from a single team colour. Mixes
