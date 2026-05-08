@@ -67,7 +67,7 @@ import { mergeGameStats } from "@/lib/seasonStats";
 import { getEffectiveRoster } from "@/lib/rosters";
 import { getOverrideFor } from "@/lib/playerRoster";
 import { getTeamBySlug } from "@/lib/teams";
-import { getTeamDisplayColor } from "@/lib/teamColor";
+import { getMatchColors, getTeamDisplayColor } from "@/lib/teamColor";
 import { DICE_TUMBLE_MS, Dice } from "@/components/Dice";
 import { BaseDiamond } from "@/components/BaseDiamond";
 import { Scoreboard } from "@/components/Scoreboard";
@@ -773,6 +773,19 @@ function Play({
         ? batter.name
         : null;
 
+  // Resolve which colour each side gets for active dice + card ring.
+  // When the two primaries are too similar, the away team uses accent
+  // so the matchup still reads as two distinct teams.
+  const matchColors = useMemo(
+    () => getMatchColors(game.home.team, game.away.team),
+    [game.home.team, game.away.team],
+  );
+  // Pitcher = fielding team, batter = batting team.
+  const pitcherColor =
+    fieldingSide === "home" ? matchColors.home : matchColors.away;
+  const batterColor =
+    battingSide === "home" ? matchColors.home : matchColors.away;
+
   return (
     <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-2 sm:px-6 sm:py-3">
       {/* Two-row header keeps everything legible on narrow screens.
@@ -849,6 +862,8 @@ function Play({
           }
           onTapPitch={tapPitcher}
           onTapSwing={tapBatter}
+          pitcherColor={pitcherColor}
+          batterColor={batterColor}
         />
       )}
     </main>
@@ -966,6 +981,8 @@ function TwoCardLayout({
   isOpponentActing,
   onTapPitch,
   onTapSwing,
+  pitcherColor,
+  batterColor,
 }: {
   focus: CardFocus;
   pitcher: PitcherCard;
@@ -983,6 +1000,8 @@ function TwoCardLayout({
   isOpponentActing: boolean;
   onTapPitch: () => void;
   onTapSwing: () => void;
+  pitcherColor: string;
+  batterColor: string;
 }) {
   const headline =
     focus === "intro"
@@ -1008,12 +1027,12 @@ function TwoCardLayout({
       <div className="relative flex-1 min-h-0">
         <CardLayer
           card={pitcher}
-          ringClass="ring-rose-400/40"
+          ringColor={pitcherColor}
           position={pitcherPos(focus)}
         />
         <CardLayer
           card={batter}
-          ringClass="ring-sky-400/40"
+          ringColor={batterColor}
           position={batterPos(focus)}
         />
         {focus === "intro" && (
@@ -1044,7 +1063,7 @@ function TwoCardLayout({
       <div className="shrink-0 mt-2 flex items-center justify-center">
         {focus === "batter" ? (
           <Dice
-            tone="batter"
+            baseColor={batterColor}
             status={swingStatus}
             value={swingValue}
             label={`OB ${batter.onBase}`}
@@ -1052,7 +1071,7 @@ function TwoCardLayout({
           />
         ) : (
           <Dice
-            tone="pitcher"
+            baseColor={pitcherColor}
             status={pitchStatus}
             value={pitchValue}
             label={`+${pitcher.control}`}
@@ -1066,11 +1085,11 @@ function TwoCardLayout({
 
 function CardLayer({
   card,
-  ringClass,
+  ringColor,
   position,
 }: {
   card: CardType;
-  ringClass: string;
+  ringColor: string;
   position: CardSlotPosition;
 }) {
   return (
@@ -1092,7 +1111,12 @@ function CardLayer({
         alt={card.name}
         width={1488}
         height={2079}
-        className={`block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4 ${ringClass}`}
+        // 8-digit hex: ~40% alpha, matching the old ring-rose-400/40 cue.
+        style={{
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ["--tw-ring-color" as any]: `${ringColor}66`,
+        }}
+        className="block max-h-full max-w-full w-auto h-auto rounded-xl shadow-md shadow-black/40 ring-4"
         sizes="90vw"
         priority
       />

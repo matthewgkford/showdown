@@ -7,6 +7,70 @@ import type { Team } from "@/types/team";
 // look muddy against zinc-950.
 const MIN_LUMINANCE = 0.3;
 
+// RGB Euclidean distance below which two team primaries are considered
+// "too similar" and the away team falls back to its accent so the home
+// vs away cue stays readable. The league has many near-black primaries
+// (#1A1A1A, #1C1C1C, #1A1815) and several dark navys, so this threshold
+// gets tripped a lot — exactly the case the user wants accent for.
+const SIMILAR_THRESHOLD = 60;
+
+// For a given matchup, decide which colour each side should use for the
+// active dice + card ring. Default to primary; if both primaries are
+// near-identical, switch the away team to its accent.
+export function getMatchColors(
+  home: Team,
+  away: Team,
+): { home: string; away: string } {
+  const homePrimary = home.colors.primary;
+  const awayPrimary = away.colors.primary;
+  if (rgbDistance(homePrimary, awayPrimary) < SIMILAR_THRESHOLD) {
+    return { home: homePrimary, away: away.colors.accent };
+  }
+  return { home: homePrimary, away: awayPrimary };
+}
+
+// Generate a top→bottom gradient pair from a single team colour. Mixes
+// with white/black so the dice still has 3D depth even when the base
+// is very dark or very light.
+export function diceGradientStops(hex: string): [string, string] {
+  return [mixWithWhite(hex, 0.45), mixWithBlack(hex, 0.35)];
+}
+
+function rgbDistance(a: string, b: string): number {
+  const ra = parseHex(a);
+  const rb = parseHex(b);
+  if (!ra || !rb) return Infinity;
+  const dr = ra[0] - rb[0];
+  const dg = ra[1] - rb[1];
+  const db = ra[2] - rb[2];
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+
+function mixWithWhite(hex: string, amount: number): string {
+  const rgb = parseHex(hex);
+  if (!rgb) return hex;
+  return toHex(rgb.map((v) => Math.round(v + (255 - v) * amount)) as [
+    number,
+    number,
+    number,
+  ]);
+}
+
+function mixWithBlack(hex: string, amount: number): string {
+  const rgb = parseHex(hex);
+  if (!rgb) return hex;
+  return toHex(rgb.map((v) => Math.round(v * (1 - amount))) as [
+    number,
+    number,
+    number,
+  ]);
+}
+
+function toHex([r, g, b]: [number, number, number]): string {
+  const h = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
 export function getTeamDisplayColor(team: Team): string {
   const candidates = [
     team.colors.accent,

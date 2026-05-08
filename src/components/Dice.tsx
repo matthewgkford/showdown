@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
+import { diceGradientStops } from "@/lib/teamColor";
 
 type Status = "idle" | "rolling" | "settled";
 type Tone = "neutral" | "pitcher" | "batter";
@@ -21,12 +22,17 @@ export function Dice({
   label,
   onTap,
   tone = "neutral",
+  baseColor,
 }: {
   status: Status;
   value: number | null;
   label: string;
   onTap?: () => void;
   tone?: Tone;
+  // When set, overrides `tone` and derives a light→dark gradient from
+  // the given hex colour. Used in live games to tint the active die in
+  // the acting team's colour.
+  baseColor?: string;
 }) {
   const [tumbleFace, setTumbleFace] = useState<number>(1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -75,7 +81,7 @@ export function Dice({
             : "cursor-default"
         } ${status === "idle" ? "opacity-80" : "opacity-100"}`}
       >
-        <D20 value={display} tone={tone} />
+        <D20 value={display} tone={tone} baseColor={baseColor} />
         {tappable && (
           <span className="absolute inset-0 rounded-full ring-4 ring-emerald-400/50 animate-pulse pointer-events-none" />
         )}
@@ -90,12 +96,18 @@ export function Dice({
 function D20({
   value,
   tone,
+  baseColor,
 }: {
   value: number | string;
   tone: Tone;
+  baseColor?: string;
 }) {
-  const gradId = useId();
-  const [stopA, stopB] = TONE_STOPS[tone];
+  const rawId = useId();
+  const gradId = `d${rawId.replace(/:/g, "")}`;
+
+  const [stopA, stopB] = baseColor
+    ? diceGradientStops(baseColor)
+    : TONE_STOPS[tone];
   return (
     <svg
       viewBox="0 0 100 100"
