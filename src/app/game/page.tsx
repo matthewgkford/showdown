@@ -1654,25 +1654,43 @@ function Field({
         className="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
       >
-        {/* Outfield grass */}
-        <rect width="100" height="100" fill="#2a5c32" />
-        {/* Infield dirt — circular skin matching real MLB fields */}
-        <circle cx="50" cy="50" r="37" fill="#b8844a" />
-        {/* Infield grass — inner diamond creates sandy basepath strips */}
-        <polygon points="50,25 75,50 50,75 25,50" fill="#306b3a" />
-        {/* Foul lines extending from home through 1st/3rd to the edges */}
-        <line x1="50" y1="88" x2="100" y2="38" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
-        <line x1="50" y1="88" x2="0" y2="38" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
+        <defs>
+          {/* Alternating mow stripes across the outfield */}
+          <pattern id="fl-mow" x="0" y="0" width="100" height="8" patternUnits="userSpaceOnUse">
+            <rect width="100" height="4" fill="#245c2a" />
+            <rect y="4" width="100" height="4" fill="#1b4520" />
+          </pattern>
+          {/* Infield dirt: lighter centre fading to darker clay at edges */}
+          <radialGradient id="fl-dirt" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor="#cc9f68" />
+            <stop offset="100%" stopColor="#8f5e2e" />
+          </radialGradient>
+          {/* Infield grass: brighter centre fading out */}
+          <radialGradient id="fl-ingrass" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor="#2e7040" />
+            <stop offset="100%" stopColor="#1b4e2a" />
+          </radialGradient>
+        </defs>
+
+        {/* Outfield grass with mow stripes */}
+        <rect width="100" height="100" fill="url(#fl-mow)" />
+        {/* Infield dirt — r=41 keeps the base bags fully within the skin */}
+        <circle cx="50" cy="50" r="41" fill="url(#fl-dirt)" />
+        {/* Infield grass */}
+        <polygon points="50,25 75,50 50,75 25,50" fill="url(#fl-ingrass)" />
+        {/* Foul lines */}
+        <line x1="50" y1="88" x2="100" y2="38" stroke="rgba(255,255,255,0.25)" strokeWidth="0.5" />
+        <line x1="50" y1="88" x2="0" y2="38" stroke="rgba(255,255,255,0.25)" strokeWidth="0.5" />
         {/* Baselines */}
         <polygon
           points="50,12 88,50 50,88 12,50"
           fill="none"
-          stroke="rgba(255,255,255,0.75)"
+          stroke="rgba(255,255,255,0.8)"
           strokeWidth="0.5"
           strokeLinejoin="round"
         />
         {/* Pitcher's mound */}
-        <circle cx="50" cy="50" r="5" fill="#c4956a" />
+        <circle cx="50" cy="50" r="5" fill="#cc9f68" />
         {/* Base bags */}
         <BaseSquare cx={88} cy={50} occupied={runners.some((r) => r.pos === "first")} />
         <BaseSquare cx={50} cy={12} occupied={runners.some((r) => r.pos === "second")} />
@@ -1684,7 +1702,7 @@ function Field({
           width={10}
           height={10}
           transform="rotate(45 50 89)"
-          fill="rgba(255,255,255,0.9)"
+          fill="white"
         />
 
         {/* Outcome trajectory: lives inside the same viewBox so coords
@@ -1899,8 +1917,8 @@ function BaseSquare({
       width={6}
       height={6}
       transform={`rotate(45 ${cx} ${cy})`}
-      fill={occupied ? "#22c55e" : "rgba(255,255,255,0.8)"}
-      stroke={occupied ? "#4ade80" : "rgba(255,255,255,0.95)"}
+      fill={occupied ? "#22c55e" : "white"}
+      stroke={occupied ? "#4ade80" : "rgba(255,255,255,0.6)"}
       strokeWidth={0.6}
     />
   );
