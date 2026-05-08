@@ -256,11 +256,21 @@ function InningCell({
   );
 }
 
-// Row of small flags on poles strung across the top of the panel.
-// Each flag hangs from a thin vertical pole and ripples sideways
-// with a staggered, asymmetric flutter — meant to read as wind
-// rather than the metronome wave of bunting. Colors alternate
-// between the home team's primary + accent.
+// Wind-ripple keyframes for the flag SVG path.
+// Shape: rectangular body (x 0–20) with a triangular point to the right (tip at x=26, y=7).
+// Top and bottom edges use cubic beziers so the wave rolls naturally from pole to tip.
+// All frames share identical command structure (M C L L C Z) so framer-motion
+// interpolates the numeric values smoothly.
+const FLAG_PATHS = [
+  "M 0 0 C 7 -2 14 1 20 0 L 26 7 L 20 14 C 14 15 7 12 0 14 Z",
+  "M 0 0 C 7 1 14 -1 20 0 L 26 8 L 20 14 C 14 11 7 15 0 14 Z",
+  "M 0 0 C 7 -1 14 2 20 1 L 26 7 L 20 13 C 14 12 7 14 0 14 Z",
+  "M 0 0 C 7 2 14 -2 20 0 L 26 7.5 L 20 14 C 14 13 7 11 0 14 Z",
+  "M 0 0 C 7 -2 14 1 20 0 L 26 7 L 20 14 C 14 15 7 12 0 14 Z",
+];
+
+// Row of small pointed flags on poles strung across the top of the panel.
+// Colors alternate between the home team's primary + accent.
 function Bunting({ homeTeam }: { homeTeam: Team }) {
   const FLAG_COUNT = 7;
   const colorA = homeTeam.colors.primary;
@@ -271,47 +281,48 @@ function Bunting({ homeTeam }: { homeTeam: Team }) {
       className="pointer-events-none absolute -top-4 left-3 right-3 flex items-start justify-between"
     >
       {Array.from({ length: FLAG_COUNT }, (_, i) => (
-        <div key={i} className="relative flex items-start">
-          {/* Pole — thin vertical line the flag hangs off of. */}
-          <div className="w-px h-5 bg-zinc-500/70" />
-          {/* Flag — rectangle with a swallowtail V-cut on the right.
-              We animate three things at once to get a real ripple:
-                · skewX: overall horizontal sway
-                · scaleY: subtle vertical breathing
-                · clipPath: the V-cut + outer edges ripple in a wave
-              All staggered so neighbours never sync. */}
-          <motion.div
-            initial={false}
-            animate={{
-              skewX: [-5, 8, -3, 7, -4, 6, -5],
-              scaleY: [1, 1.06, 0.94, 1.04, 0.97, 1.03, 1],
-              clipPath: [
-                "polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)",
-                "polygon(0 0, 96% 6%, 92% 55%, 100% 92%, 0 100%)",
-                "polygon(0 0, 100% 0, 84% 45%, 98% 100%, 0 100%)",
-                "polygon(0 0, 98% 4%, 90% 50%, 96% 95%, 0 100%)",
-                "polygon(0 0, 100% 2%, 86% 52%, 100% 96%, 0 100%)",
-                "polygon(0 0, 97% 0, 90% 48%, 99% 100%, 0 100%)",
-                "polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)",
-              ],
-            }}
-            transition={{
-              duration: 2.6 + (i % 3) * 0.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.22,
-            }}
-            style={{
-              backgroundColor: i % 2 === 0 ? colorA : colorB,
-              width: 24,
-              height: 13,
-              marginTop: 1,
-              transformOrigin: "left center",
-              opacity: 0.9,
-            }}
-          />
-        </div>
+        <Flag
+          key={i}
+          color={i % 2 === 0 ? colorA : colorB}
+          delay={i * 0.28}
+          duration={2.4 + (i % 3) * 0.35}
+        />
       ))}
+    </div>
+  );
+}
+
+function Flag({
+  color,
+  delay,
+  duration,
+}: {
+  color: string;
+  delay: number;
+  duration: number;
+}) {
+  return (
+    <div className="relative flex items-start">
+      <div className="w-px h-5 bg-zinc-500/70" />
+      <svg
+        width={26}
+        height={14}
+        viewBox="0 0 26 14"
+        style={{ marginTop: 1, overflow: "visible" }}
+      >
+        <motion.path
+          d={FLAG_PATHS[0]}
+          fill={color}
+          fillOpacity={0.9}
+          animate={{ d: FLAG_PATHS }}
+          transition={{
+            duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay,
+          }}
+        />
+      </svg>
     </div>
   );
 }
