@@ -261,12 +261,15 @@ function InningCell({
 // Top and bottom edges use cubic beziers so the wave rolls naturally from pole to tip.
 // All frames share identical command structure (M C L L C Z) so framer-motion
 // interpolates the numeric values smoothly.
+// Pure triangle (left edge on the pole, tip pointing right) with cubic-bezier
+// ripple on both slanted sides. All frames share M C C Z so framer-motion
+// interpolates the numbers smoothly.
 const FLAG_PATHS = [
-  "M 0 0 C 7 -2 14 1 20 0 L 26 7 L 20 14 C 14 15 7 12 0 14 Z",
-  "M 0 0 C 7 1 14 -1 20 0 L 26 8 L 20 14 C 14 11 7 15 0 14 Z",
-  "M 0 0 C 7 -1 14 2 20 1 L 26 7 L 20 13 C 14 12 7 14 0 14 Z",
-  "M 0 0 C 7 2 14 -2 20 0 L 26 7.5 L 20 14 C 14 13 7 11 0 14 Z",
-  "M 0 0 C 7 -2 14 1 20 0 L 26 7 L 20 14 C 14 15 7 12 0 14 Z",
+  "M 0 0 C 9 -2 18 1 26 7 C 18 15 9 12 0 14 Z",
+  "M 0 0 C 9 1 18 -1 26 8 C 18 11 9 15 0 14 Z",
+  "M 0 0 C 9 -1 18 2 26 7 C 18 12 9 14 0 14 Z",
+  "M 0 0 C 9 2 18 -2 26 7.5 C 18 13 9 11 0 14 Z",
+  "M 0 0 C 9 -2 18 1 26 7 C 18 15 9 12 0 14 Z",
 ];
 
 // Row of small pointed flags on poles strung across the top of the panel.
