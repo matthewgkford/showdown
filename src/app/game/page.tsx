@@ -1654,23 +1654,37 @@ function Field({
         className="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
       >
+        {/* Outfield grass */}
+        <rect width="100" height="100" fill="#2a5c32" />
+        {/* Infield dirt — circular skin matching real MLB fields */}
+        <circle cx="50" cy="50" r="37" fill="#b8844a" />
+        {/* Infield grass — inner diamond creates sandy basepath strips */}
+        <polygon points="50,25 75,50 50,75 25,50" fill="#306b3a" />
+        {/* Foul lines extending from home through 1st/3rd to the edges */}
+        <line x1="50" y1="88" x2="100" y2="38" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
+        <line x1="50" y1="88" x2="0" y2="38" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
+        {/* Baselines */}
         <polygon
           points="50,12 88,50 50,88 12,50"
-          fill="rgba(34,197,94,0.05)"
-          stroke="rgba(255,255,255,0.18)"
-          strokeWidth="0.4"
-          strokeDasharray="2 2"
+          fill="none"
+          stroke="rgba(255,255,255,0.75)"
+          strokeWidth="0.5"
+          strokeLinejoin="round"
         />
+        {/* Pitcher's mound */}
+        <circle cx="50" cy="50" r="5" fill="#c4956a" />
+        {/* Base bags */}
         <BaseSquare cx={88} cy={50} occupied={runners.some((r) => r.pos === "first")} />
         <BaseSquare cx={50} cy={12} occupied={runners.some((r) => r.pos === "second")} />
         <BaseSquare cx={12} cy={50} occupied={runners.some((r) => r.pos === "third")} />
+        {/* Home plate */}
         <rect
           x={45}
           y={84}
           width={10}
           height={10}
           transform="rotate(45 50 89)"
-          fill="rgba(255,255,255,0.35)"
+          fill="rgba(255,255,255,0.9)"
         />
 
         {/* Outcome trajectory: lives inside the same viewBox so coords
@@ -1753,7 +1767,7 @@ function OutcomeTrajectory({
     outcome === "double" ||
     outcome === "triple" ||
     outcome === "homer";
-  const stroke = isHit ? "#10b981" : "#fb7185";
+  const stroke = isHit ? "#fbbf24" : "#fb7185";
 
   return (
     <g>
@@ -1885,8 +1899,8 @@ function BaseSquare({
       width={6}
       height={6}
       transform={`rotate(45 ${cx} ${cy})`}
-      fill={occupied ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.05)"}
-      stroke={occupied ? "#10b981" : "rgba(255,255,255,0.3)"}
+      fill={occupied ? "#22c55e" : "rgba(255,255,255,0.8)"}
+      stroke={occupied ? "#4ade80" : "rgba(255,255,255,0.95)"}
       strokeWidth={0.6}
     />
   );
