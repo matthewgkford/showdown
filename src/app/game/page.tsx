@@ -1750,33 +1750,94 @@ type TrajectoryCfg = {
   segDelay?: number;
 };
 
-const TRAJECTORIES: Partial<Record<Outcome, TrajectoryCfg>> = {
-  single: { paths: ["M 50 88 Q 65 60 75 38"], duration: 0.65 },
-  singlePlus: { paths: ["M 50 88 Q 70 55 82 32"], duration: 0.7 },
-  double: { paths: ["M 50 88 Q 72 38 88 16"], duration: 0.85 },
-  triple: { paths: ["M 50 88 Q 30 38 12 12"], duration: 1.0 },
-  homer: { paths: ["M 50 88 Q 50 35 50 -20"], duration: 1.0 },
-  // Fly ball: a long arc up and out to a fielder.
-  fb: { paths: ["M 50 88 Q 50 22 70 38"], duration: 0.95 },
-  // Pop up: brief lazy arc dying near home plate.
-  pu: { paths: ["M 50 88 Q 50 65 56 80"], duration: 0.55 },
-};
+// SVG coordinate helper — one decimal place is plenty.
+const f = (n: number) => n.toFixed(1);
 
-// Ground out: a chopper to short, then the throw to wherever the lead
-// forced runner was put out. Empty bases / no force → throw to 1st
-// (the batter). 1st only or 1st+3rd → throw to 2nd (R1 forced). 1st+2nd
-// → throw to 3rd (R2 forced). Loaded → throw home (R3 forced).
+// Randomised trajectory for every outcome so no two at-bats look identical.
+// Called inside a useMemo in OutcomeTrajectory so the values are frozen for
+// the lifetime of each field view.
+function randomTrajectory(outcome: Outcome, preBases: Bases): TrajectoryCfg | null {
+  const r = Math.random;
+  switch (outcome) {
+    case "single": {
+      // Shallow outfield — full width spread
+      const endX = 15 + r() * 70;
+      const endY = 24 + r() * 16;
+      return { paths: [`M 50 88 Q ${f(40 + r() * 20)} 42 ${f(endX)} ${f(endY)}`], duration: 0.62 };
+    }
+    case "singlePlus": {
+      const endX = 12 + r() * 76;
+      const endY = 13 + r() * 16;
+      return { paths: [`M 50 88 Q ${f(38 + r() * 24)} 35 ${f(endX)} ${f(endY)}`], duration: 0.7 };
+    }
+    case "double": {
+      const endX = 5 + r() * 90;
+      const endY = 4 + r() * 14;
+      return { paths: [`M 50 88 Q ${f(32 + r() * 36)} 28 ${f(endX)} ${f(endY)}`], duration: 0.85 };
+    }
+    case "triple": {
+      // Deep corner shots — left or right at random
+      const toLeft = r() < 0.5;
+      const endX = toLeft ? 4 + r() * 22 : 74 + r() * 22;
+      const endY = 4 + r() * 16;
+      const cpX = toLeft ? 16 + r() * 18 : 66 + r() * 18;
+      return { paths: [`M 50 88 Q ${f(cpX)} 24 ${f(endX)} ${f(endY)}`], duration: 1.0 };
+    }
+    case "homer": {
+      // Straight over the fence with a slight L/R drift
+      const drift = r() * 20 - 10;
+      return { paths: [`M 50 88 Q ${f(50 + drift)} 30 ${f(50 + drift)} -22`], duration: 1.0 };
+    }
+    case "fb": {
+      // Fly ball out — caught anywhere in the outfield
+      const endX = 12 + r() * 76;
+      const endY = 10 + r() * 34;
+      return {
+        paths: [`M 50 88 Q ${f(36 + r() * 28)} ${f(18 + r() * 24)} ${f(endX)} ${f(endY)}`],
+        duration: 0.9,
+      };
+    }
+    case "pu": {
+      // Pop up — dies near the plate with slight direction variation
+      const endX = 44 + r() * 12;
+      const endY = 70 + r() * 14;
+      return { paths: [`M 50 88 Q ${f(44 + r() * 12)} 62 ${f(endX)} ${f(endY)}`], duration: 0.52 };
+    }
+    case "gb":
+      return gbTrajectory(preBases);
+    default:
+      return null;
+  }
+}
+
+// Ground out: rolls to the relevant infield position near the basepath
+// boundary, then gets thrown to the force-play target base.
 function gbTrajectory(preBases: Bases): TrajectoryCfg {
   const target = (() => {
-    if (!preBases.first) return { x: 84, y: 50 }; // throw to 1st
+    if (!preBases.first) return { x: 84, y: 50 };                   // 1st
     if (preBases.second && preBases.third) return { x: 50, y: 84 }; // home
-    if (preBases.second) return { x: 16, y: 50 }; // 3rd
-    return { x: 50, y: 16 }; // 2nd
+    if (preBases.second) return { x: 16, y: 50 };                   // 3rd
+    return { x: 50, y: 16 };                                        // 2nd
   })();
+
+  // Fielding spot randomised near the relevant section of the basepath edge
+  const r = Math.random;
+  const fp = (() => {
+    if (!preBases.first)
+      return { x: 64 + r() * 16, y: 54 + r() * 14 }; // 1B side
+    if (preBases.second && preBases.third)
+      return { x: 17 + r() * 14, y: 50 + r() * 14 }; // near 3B
+    if (preBases.second)
+      return { x: 28 + r() * 12, y: 42 + r() * 14 }; // SS area
+    return r() > 0.5
+      ? { x: 30 + r() * 14, y: 44 + r() * 14 }  // SS
+      : { x: 56 + r() * 14, y: 44 + r() * 14 };  // 2B
+  })();
+
   return {
-    paths: ["M 50 88 L 32 64", `M 32 64 L ${target.x} ${target.y}`],
-    duration: 0.42,
-    segDelay: 0.42,
+    paths: [`M 50 88 L ${f(fp.x)} ${f(fp.y)}`, `M ${f(fp.x)} ${f(fp.y)} L ${target.x} ${target.y}`],
+    duration: 0.38,
+    segDelay: 0.38,
   };
 }
 
@@ -1787,7 +1848,13 @@ function OutcomeTrajectory({
   outcome: Outcome;
   preBases: Bases;
 }) {
-  const cfg = outcome === "gb" ? gbTrajectory(preBases) : TRAJECTORIES[outcome];
+  // Freeze the random trajectory for this at-bat. Runner IDs are stable
+  // within a single field view so this fires exactly once per outcome.
+  const cfg = useMemo(
+    () => randomTrajectory(outcome, preBases),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [outcome, preBases.first?.id, preBases.second?.id, preBases.third?.id],
+  );
   if (!cfg) return null;
 
   const isHit =
