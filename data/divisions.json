@@ -5,7 +5,7 @@
     "teamSlugs": [
       "bagels",
       "pepperoni-slices",
-      "skyliners",
+      "eagle-rockers",
       "lincoln-tunnellers",
       "parkways"
     ]
@@ -19,6 +19,28 @@
       "boardwalk-bandits",
       "rippers",
       "meadowlands"
+    ]
+  },
+  {
+    "slug": "pinelands",
+    "name": "Pinelands Division",
+    "teamSlugs": [
+      "ramapos",
+      "black-bears",
+      "goldfinches",
+      "devils-hole",
+      "baked-zities"
+    ]
+  },
+  {
+    "slug": "beacon",
+    "name": "Beacon Division",
+    "teamSlugs": [
+      "continentals",
+      "stone-ponys",
+      "ocean-grovers",
+      "spheres",
+      "edisons"
     ]
   }
 ]

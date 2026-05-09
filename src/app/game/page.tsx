@@ -1883,6 +1883,27 @@ function PreGameScreen({
         </motion.div>
       </motion.div>
 
+      {/* Stadium image — home team venue */}
+      {home.stadium && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ delay: 0.55, duration: 0.4, ease: "easeOut" }}
+          className="absolute bottom-12 left-3 right-3 z-10 pointer-events-none"
+        >
+          <div className="relative w-full h-28 sm:h-36 overflow-hidden rounded-xl">
+            <Image
+              src={home.stadium}
+              alt={`${home.name} stadium`}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-zinc-950/70 via-transparent to-zinc-950/30" />
+          </div>
+        </motion.div>
+      )}
+
       {/* Tap hint + draining progress bar */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -1890,7 +1911,7 @@ function PreGameScreen({
         transition={{ delay: 0.7, duration: 0.3 }}
         className="absolute bottom-0 left-0 right-0 pointer-events-none"
       >
-        <div className="text-center pb-4">
+        <div className="text-center pb-2.5">
           <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-semibold">
             Tap to begin
           </span>

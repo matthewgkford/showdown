@@ -1,14 +1,12 @@
 import { getAllTeams } from "@/lib/teams";
 import type { ScheduledGame } from "@/types/schedule";
 
-// Generate a deterministic 90-game double round-robin for the 10 NJ teams.
+// Generate a deterministic double round-robin for all NJ teams.
 //
 // Algorithm: classic "circle method". We fix team 0 in place and rotate
-// the remaining 9 around it. Each round produces 5 pairings; with 10
-// teams this gives 9 unique-pairing rounds where every team plays every
-// other team exactly once. We then run a second cycle of 9 rounds with
-// the same pairings but home/away flipped — giving each team 9 home + 9
-// away games for an 18-game season.
+// the remaining N-1 around it. Each round produces N/2 pairings; N-1
+// unique-pairing rounds cover every opponent once. A second cycle flips
+// home/away — giving each team (N-1) home + (N-1) away games per season.
 //
 // Determinism: same input team list = same schedule. The schedule does
 // NOT depend on which team the player picked; the player's view (their

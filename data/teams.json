@@ -7,7 +7,7 @@
     "colors": { "primary": "#1F2A44", "accent": "#C9A878", "light": "#F5EDD8" },
     "logos": { "primary": "/logos/bagels/primary.png" },
     "flavor": "Pinstripes, posture, and a team that takes itself dead seriously despite the name. The Turnpike's gold standard.",
-    "stadium": null
+    "stadium": "/stadiums/bagels.png"
   },
   {
     "slug": "pepperoni-slices",
@@ -17,17 +17,17 @@
     "colors": { "primary": "#074345", "accent": "#7A2A2A", "light": "#D4B47C" },
     "logos": { "primary": "/logos/pepperoni-slices/primary.png" },
     "flavor": "Old-school pizzeria neon and red sauce on the cleats. The natural-born nemesis of the Bagels.",
-    "stadium": null
+    "stadium": "/stadiums/pepperoni-slices.png"
   },
   {
-    "slug": "skyliners",
-    "name": "Skyliners",
-    "shortName": "SKY",
+    "slug": "eagle-rockers",
+    "name": "Eagle Rockers",
+    "shortName": "EGL",
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1A1F2E", "accent": "#E8B547", "light": "#F2EAD6" },
-    "logos": { "primary": "/logos/skyliners/primary.png" },
+    "logos": { "primary": "/logos/eagle-rockers/primary.png" },
     "flavor": "Plays at the overlook with the Manhattan skyline behind them. Dignified, scenic, very particular about the view.",
-    "stadium": null
+    "stadium": "/stadiums/eagle-rockers.png"
   },
   {
     "slug": "lincoln-tunnellers",
@@ -37,7 +37,7 @@
     "colors": { "primary": "#1A1815", "accent": "#D67D2C", "light": "#EFE4C8" },
     "logos": { "primary": "/logos/lincoln-tunnellers/primary.png" },
     "flavor": "Vintage 1937 commuter team — sodium-light glow, tile cream, the smell of exhaust and coffee. Wins on grit.",
-    "stadium": null
+    "stadium": "/stadiums/lincoln-tunnellers.png"
   },
   {
     "slug": "parkways",
@@ -47,7 +47,7 @@
     "colors": { "primary": "#0E5D3A", "accent": "#F2C94C", "light": "#F4F1E4" },
     "logos": { "primary": "/logos/parkways/primary.png" },
     "flavor": "Modern, civic, sans-serif. The highway-sign team in a league of personalities.",
-    "stadium": null
+    "stadium": "/stadiums/parkways.png"
   },
   {
     "slug": "mischief-nighters",
@@ -57,7 +57,7 @@
     "colors": { "primary": "#3D2B5E", "accent": "#E8893E", "light": "#F5EDD8" },
     "logos": { "primary": "/logos/mischief-nighters/primary.png" },
     "flavor": "Suburban Halloween-eve mischief. Spooky-cute autumn Americana — the team that toilet-papers your ace.",
-    "stadium": null
+    "stadium": "/stadiums/mischief-nighters.png"
   },
   {
     "slug": "diner-rats",
@@ -67,7 +67,7 @@
     "colors": { "primary": "#1A1A1A", "accent": "#FF2E63", "light": "#FBF4E4" },
     "logos": { "primary": "/logos/diner-rats/primary.png" },
     "flavor": "2am at the 24-hour diner. Scrappy, urban, late-night, fueled by disco fries and bad decisions.",
-    "stadium": null
+    "stadium": "/stadiums/diner-rats.png"
   },
   {
     "slug": "boardwalk-bandits",
@@ -77,7 +77,7 @@
     "colors": { "primary": "#3E7C8B", "accent": "#D85A4A", "light": "#F5EBD6" },
     "logos": { "primary": "/logos/boardwalk-bandits/primary.png" },
     "flavor": "Sun-faded shore vibes. Mascot is a seagull who steals your fries the moment you look down at the box score.",
-    "stadium": null
+    "stadium": "/stadiums/boardwalk-bandits.png"
   },
   {
     "slug": "rippers",
@@ -87,7 +87,7 @@
     "colors": { "primary": "#1A1A1A", "accent": "#E8B23B", "light": "#F2E8D0" },
     "logos": { "primary": "/logos/rippers/primary.png" },
     "flavor": "Working-class roadside team named after Rutt's Hut deep-fried hot dogs. Wins ugly, doesn't apologize.",
-    "stadium": null
+    "stadium": "/stadiums/rippers.png"
   },
   {
     "slug": "meadowlands",
@@ -97,6 +97,106 @@
     "colors": { "primary": "#1C1C1C", "accent": "#3C5A5E", "light": "#EDE6D6" },
     "logos": { "primary": "/logos/meadowlands/primary.png" },
     "flavor": "Industrial swampland gravitas. The atmospheric heavyweight — fog, neon, exit-ramp menace.",
-    "stadium": null
+    "stadium": "/stadiums/meadowlands.png"
+  },
+  {
+    "slug": "ramapos",
+    "name": "Ramapos",
+    "shortName": "RAM",
+    "divisionSlug": "pinelands",
+    "colors": { "primary": "#2E4A6B", "accent": "#C68642", "light": "#F0EAD8" },
+    "logos": { "primary": "/logos/ramapos/primary.png" },
+    "flavor": "Forest lake at sunrise. Pine trees, calm water, the team that plays in the woods. Quiet but tough — like a porcupine with a bat.",
+    "stadium": "/stadiums/ramapos.png"
+  },
+  {
+    "slug": "black-bears",
+    "name": "Black Bears",
+    "shortName": "BLK",
+    "divisionSlug": "pinelands",
+    "colors": { "primary": "#3D4F2F", "accent": "#C49432", "light": "#EFE8D2" },
+    "logos": { "primary": "/logos/black-bears/primary.png" },
+    "flavor": "Sussex County wilderness team. Quiet, dignified, deceptively powerful — the bear you actually meet on a hiking trail.",
+    "stadium": "/stadiums/black-bears.png"
+  },
+  {
+    "slug": "goldfinches",
+    "name": "Goldfinches",
+    "shortName": "FNC",
+    "divisionSlug": "pinelands",
+    "colors": { "primary": "#F4D43F", "accent": "#1A1A1A", "light": "#FBF8E8" },
+    "logos": { "primary": "/logos/goldfinches/primary.png" },
+    "flavor": "NJ state bird, the bright lemon-yellow team. Small, fast, scrappy — the leadoff hitter of the league.",
+    "stadium": "/stadiums/goldfinches.png"
+  },
+  {
+    "slug": "devils-hole",
+    "name": "Devil's Hole",
+    "shortName": "DEV",
+    "divisionSlug": "pinelands",
+    "colors": { "primary": "#7A1820", "accent": "#0F0808", "light": "#EAE0C8" },
+    "logos": { "primary": "/logos/devils-hole/primary.png" },
+    "flavor": "Cedar Grove folklore made flesh. Vintage gothic woodcut energy, eerie crimson glow, slightly haunted — the swimming hole locals warned you about.",
+    "stadium": "/stadiums/devils-hole.png"
+  },
+  {
+    "slug": "baked-zities",
+    "name": "Baked Zities",
+    "shortName": "ZIT",
+    "divisionSlug": "pinelands",
+    "colors": { "primary": "#C8392E", "accent": "#D8A14A", "light": "#F4ECD4" },
+    "logos": { "primary": "/logos/baked-zities/primary.png" },
+    "flavor": "Sunday family dinner abundance. Warm, generous, smells faintly of garlic — the team that brings tupperware to away games.",
+    "stadium": "/stadiums/baked-zities.png"
+  },
+  {
+    "slug": "continentals",
+    "name": "Continentals",
+    "shortName": "CON",
+    "divisionSlug": "beacon",
+    "colors": { "primary": "#1A4789", "accent": "#D4A02A", "light": "#F0EBDA" },
+    "logos": { "primary": "/logos/continentals/primary.png" },
+    "flavor": "90s corporate aviation nostalgia. Banner-hanging, championship-coded, suit-and-tie confidence. Won, didn't celebrate, took the meeting.",
+    "stadium": "/stadiums/continentals.png"
+  },
+  {
+    "slug": "stone-ponys",
+    "name": "Stone Ponys",
+    "shortName": "STN",
+    "divisionSlug": "beacon",
+    "colors": { "primary": "#0F0F0F", "accent": "#F5F2EC", "light": "#F5F2EC" },
+    "logos": { "primary": "/logos/stone-ponys/primary.png" },
+    "flavor": "Asbury Park rock club energy. Black-and-white, leather-jacket confidence, plays night games like it's at the Pony in 1978.",
+    "stadium": "/stadiums/stone-ponys.png"
+  },
+  {
+    "slug": "ocean-grovers",
+    "name": "Ocean Grovers",
+    "shortName": "OCN",
+    "divisionSlug": "beacon",
+    "colors": { "primary": "#5C9CC4", "accent": "#F4A98A", "light": "#F4ECDA" },
+    "logos": { "primary": "/logos/ocean-grovers/primary.png" },
+    "flavor": "Sunrise on the Atlantic. Wholesome shore energy — bodyboards, sunburns, families with picnic blankets.",
+    "stadium": "/stadiums/ocean-grovers.png"
+  },
+  {
+    "slug": "spheres",
+    "name": "Spheres",
+    "shortName": "SPH",
+    "divisionSlug": "beacon",
+    "colors": { "primary": "#B8C0C8", "accent": "#0099E5", "light": "#FFFFFF" },
+    "logos": { "primary": "/logos/spheres/primary.png" },
+    "flavor": "Liberty Science Center modern. Brushed silver, electric blue, geodesic future-coded — the league's tomorrow team.",
+    "stadium": "/stadiums/spheres.png"
+  },
+  {
+    "slug": "edisons",
+    "name": "Edisons",
+    "shortName": "EDI",
+    "divisionSlug": "beacon",
+    "colors": { "primary": "#E8A02A", "accent": "#7A2E1F", "light": "#EDE2C8" },
+    "logos": { "primary": "/logos/edisons/primary.png" },
+    "flavor": "Vintage inventor warmth. Filament-bulb glow, Menlo Park lab, phonograph wax — the team that failed 999 times.",
+    "stadium": "/stadiums/edisons.png"
   }
 ]

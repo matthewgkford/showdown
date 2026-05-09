@@ -30,10 +30,9 @@ function notify(): void {
 }
 
 // Slug renames over time. Apply on load so existing saves keep working.
-// Currently just one entry from the 2026-05-04 typo fix (skylinders →
-// skyliners); add more as needed.
 const SLUG_RENAMES: Record<string, string> = {
-  skylinders: "skyliners",
+  skylinders: "skyliners",   // 2026-05-04 typo fix
+  skyliners: "eagle-rockers", // 2026-05-09 team rename
 };
 
 function rename(slug: string): string {
