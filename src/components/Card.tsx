@@ -8,7 +8,7 @@ export function Card({ card, hasImage }: { card: CardType; hasImage: boolean }) 
   if (hasImage) {
     return (
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={CARD_WIDTH}
         height={CARD_HEIGHT}

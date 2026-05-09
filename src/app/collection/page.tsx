@@ -221,7 +221,7 @@ function CardTile({
   return (
     <div className="relative">
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={1488}
         height={2079}

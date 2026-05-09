@@ -1190,7 +1190,7 @@ function CardLayer({
       className="absolute flex items-center justify-center"
     >
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={1488}
         height={2079}
@@ -2402,7 +2402,7 @@ function RunnerCard({ card, pos }: { card: BatterCard; pos: BasePos }) {
       className={`absolute ${POSITION_CLASS[pos]} flex flex-col items-center w-[22%]`}
     >
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={1488}
         height={2079}

@@ -384,7 +384,7 @@ function BatterRow({
         {rank}
       </span>
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={48}
         height={67}
@@ -452,7 +452,7 @@ function PitcherRow({
         {rank}
       </span>
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={48}
         height={67}

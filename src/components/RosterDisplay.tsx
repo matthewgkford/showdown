@@ -376,7 +376,7 @@ function RosterSlot({
         aria-label={editing ? `Swap ${card.name}` : `View ${card.name} card`}
       >
         <Image
-          src={`/cards/${card.id}.png`}
+          src={`/cards/${card.id}.webp`}
           alt={card.name}
           width={1488}
           height={2079}
@@ -427,7 +427,7 @@ function CardLightbox({
             className="relative max-h-full"
           >
             <Image
-              src={`/cards/${card.id}.png`}
+              src={`/cards/${card.id}.webp`}
               alt={card.name}
               width={1488}
               height={2079}
@@ -645,7 +645,7 @@ function CandidateCard({
       className="flex flex-col gap-1.5 rounded-lg p-1.5 outline-none transition-transform hover:scale-[1.03] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-emerald-400 hover:bg-zinc-900/60"
     >
       <Image
-        src={`/cards/${card.id}.png`}
+        src={`/cards/${card.id}.webp`}
         alt={card.name}
         width={1488}
         height={2079}

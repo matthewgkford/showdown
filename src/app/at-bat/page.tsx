@@ -342,7 +342,7 @@ function CardPicker({
       </select>
       <div className="flex-1 min-h-0 mt-2 flex items-start justify-center">
         <Image
-          src={`/cards/${card.id}.png`}
+          src={`/cards/${card.id}.webp`}
           alt={card.name}
           width={1488}
           height={2079}

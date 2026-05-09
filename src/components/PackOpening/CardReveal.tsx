@@ -69,7 +69,7 @@ export function CardReveal({
             style={{ opacity: faceup ? 1 : 0 }}
           >
             <Image
-              src={`/cards/${card.id}.png`}
+              src={`/cards/${card.id}.webp`}
               alt={card.name}
               width={CARD_W}
               height={CARD_H}
@@ -105,7 +105,7 @@ export function CardReveal({
             }}
           >
             <Image
-              src={`/cards/${card.id}.png`}
+              src={`/cards/${card.id}.webp`}
               alt={card.name}
               width={CARD_W}
               height={CARD_H}
