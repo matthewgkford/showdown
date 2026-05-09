@@ -566,7 +566,9 @@ const SWING_HOLD_MS = 2500;
 // opponent is acting. Long enough to feel like the CPU is "thinking,"
 // short enough that the player isn't waiting around.
 const AUTO_PAUSE_MS = 650;
-const PREGAME_HOLD_MS = 5500;
+const PREGAME_SCREEN1_MS = 3500; // stadium establishing shot
+const PREGAME_SCREEN2_MS = 6500; // matchup / pitcher panel
+const PREGAME_HOLD_MS = PREGAME_SCREEN1_MS + PREGAME_SCREEN2_MS + 1500; // parent safety net
 
 function Play({
   initial,
@@ -1734,207 +1736,287 @@ function PreGameScreen({
   records: { away: { wins: number; losses: number }; home: { wins: number; losses: number } } | null;
   onDismiss: () => void;
 }) {
+  const [screen, setScreen] = useState<1 | 2>(1);
   const awayColor = getTeamDisplayColor(away);
   const homeColor = getTeamDisplayColor(home);
+
+  // Auto-advance stadium → matchup, then matchup → game start.
+  useEffect(() => {
+    const t = setTimeout(() => setScreen(2), PREGAME_SCREEN1_MS);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (screen !== 2) return;
+    const t = setTimeout(onDismiss, PREGAME_SCREEN2_MS);
+    return () => clearTimeout(t);
+  }, [screen, onDismiss]);
+
+  const handleTap = () => {
+    if (screen === 1) setScreen(2);
+    else onDismiss();
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.22 }}
-      className="fixed inset-0 z-40 flex overflow-hidden cursor-pointer"
-      onClick={onDismiss}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-40 overflow-hidden cursor-pointer"
+      onClick={handleTap}
     >
-      {/* Away team panel — slides in from the left */}
-      <motion.div
-        initial={{ x: "-100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "-100%", transition: { duration: 0.25, ease: "easeIn" } }}
-        transition={{ type: "spring", stiffness: 185, damping: 26 }}
-        className="flex-1 relative flex flex-col items-center justify-center gap-3 overflow-hidden px-5"
-        style={{
-          background: `linear-gradient(140deg, ${awayColor}2a 0%, #050507 58%)`,
-        }}
-      >
-        <div
-          className="absolute -top-20 -left-20 h-72 w-72 rounded-full pointer-events-none"
-          style={{ background: `radial-gradient(circle, ${awayColor}38 0%, transparent 65%)` }}
-          aria-hidden
-        />
-        <div className="text-[9px] font-bold uppercase tracking-[0.45em] text-zinc-600">Away</div>
-        <motion.div
-          initial={{ scale: 0.45, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 240, damping: 16, delay: 0.18 }}
-          className="rounded-2xl p-2 ring-2 bg-black/40"
-          style={{ ["--tw-ring-color" as any]: `${awayColor}55` }}
-        >
-          <Image
-            src={away.logos.primary}
-            alt={away.name}
-            width={320}
-            height={320}
-            className="h-20 w-20 sm:h-28 sm:w-28 rounded-xl object-contain"
-          />
-        </motion.div>
-        <motion.div
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 260 }}
-          className="text-center"
-        >
-          <div
-            className="text-lg sm:text-xl font-black tracking-tight"
-            style={{ color: awayColor }}
-          >
-            {away.shortName}
-          </div>
-          {records && (
-            <div className="text-xs text-zinc-400 font-mono tabular-nums mt-0.5">
-              {records.away.wins}–{records.away.losses}
-            </div>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ y: 8, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.46, duration: 0.28 }}
-          className="mt-1 text-center"
-        >
-          <div className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-600">Starting</div>
-          <div className="text-xs sm:text-sm font-semibold text-zinc-200 mt-0.5">
-            {awayPitcher.name}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono">
-            Ctrl {awayPitcher.control} · IP {awayPitcher.ip}
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* VS badge */}
-      <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 420, damping: 20, delay: 0.28 }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"
-      >
-        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 shadow-2xl shadow-black/80">
-          <span className="text-sm sm:text-base font-black text-zinc-300 tracking-tight leading-none">
-            vs
-          </span>
-        </div>
-      </motion.div>
-
-      {/* Home team panel — slides in from the right */}
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%", transition: { duration: 0.25, ease: "easeIn" } }}
-        transition={{ type: "spring", stiffness: 185, damping: 26 }}
-        className="flex-1 relative flex flex-col items-center justify-center gap-3 overflow-hidden px-5"
-        style={{
-          background: `linear-gradient(220deg, ${homeColor}2a 0%, #050507 58%)`,
-        }}
-      >
-        <div
-          className="absolute -top-20 -right-20 h-72 w-72 rounded-full pointer-events-none"
-          style={{ background: `radial-gradient(circle, ${homeColor}38 0%, transparent 65%)` }}
-          aria-hidden
-        />
-        <div className="text-[9px] font-bold uppercase tracking-[0.45em] text-zinc-600">Home</div>
-        <motion.div
-          initial={{ scale: 0.45, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 240, damping: 16, delay: 0.22 }}
-          className="rounded-2xl p-2 ring-2 bg-black/40"
-          style={{ ["--tw-ring-color" as any]: `${homeColor}55` }}
-        >
-          <Image
-            src={home.logos.primary}
-            alt={home.name}
-            width={320}
-            height={320}
-            className="h-20 w-20 sm:h-28 sm:w-28 rounded-xl object-contain"
-          />
-        </motion.div>
-        <motion.div
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.34, type: "spring", stiffness: 260 }}
-          className="text-center"
-        >
-          <div
-            className="text-lg sm:text-xl font-black tracking-tight"
-            style={{ color: homeColor }}
-          >
-            {home.shortName}
-          </div>
-          {records && (
-            <div className="text-xs text-zinc-400 font-mono tabular-nums mt-0.5">
-              {records.home.wins}–{records.home.losses}
-            </div>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ y: 8, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.28 }}
-          className="mt-1 text-center"
-        >
-          <div className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-600">Starting</div>
-          <div className="text-xs sm:text-sm font-semibold text-zinc-200 mt-0.5">
-            {homePitcher.name}
-          </div>
-          <div className="text-[10px] text-zinc-500 font-mono">
-            Ctrl {homePitcher.control} · IP {homePitcher.ip}
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* Stadium image — home team venue */}
-      {home.stadium && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ delay: 0.55, duration: 0.4, ease: "easeOut" }}
-          className="absolute bottom-12 left-3 right-3 z-10 pointer-events-none"
-        >
-          <div className="relative w-full h-28 sm:h-36 overflow-hidden rounded-xl">
-            <Image
-              src={home.stadium}
-              alt={`${home.name} stadium`}
-              fill
-              className="object-cover"
-            />
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-zinc-950/70 via-transparent to-zinc-950/30" />
-          </div>
-        </motion.div>
-      )}
-
-      {/* Tap hint + draining progress bar */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.7, duration: 0.3 }}
-        className="absolute bottom-0 left-0 right-0 pointer-events-none"
-      >
-        <div className="text-center pb-2.5">
-          <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-semibold">
-            Tap to begin
-          </span>
-        </div>
-        <div className="h-0.5 bg-zinc-900 overflow-hidden">
+      <AnimatePresence mode="wait">
+        {screen === 1 ? (
+          // ── Screen 1: Full-bleed stadium ──────────────────────────────
           <motion.div
-            className="h-full bg-zinc-600"
-            initial={{ width: "100%" }}
-            animate={{ width: "0%" }}
-            transition={{ duration: PREGAME_HOLD_MS / 1000, ease: "linear" }}
-          />
-        </div>
-      </motion.div>
+            key="stadium"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            className="absolute inset-0"
+          >
+            {home.stadium ? (
+              <Image
+                src={home.stadium}
+                alt={`${home.name} stadium`}
+                fill
+                priority
+                className="object-cover"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: `linear-gradient(135deg, ${homeColor}22 0%, #050507 65%)` }}
+              />
+            )}
+            {/* Top-to-bottom dark overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-zinc-950/65" />
+
+            {/* Team callout */}
+            <motion.div
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 240, damping: 22 }}
+              className="absolute bottom-16 left-0 right-0 flex items-center justify-center gap-5 px-8"
+            >
+              <div className="flex-1 text-right">
+                <div
+                  className="text-3xl sm:text-4xl font-black tracking-tight leading-none"
+                  style={{ color: awayColor }}
+                >
+                  {away.shortName}
+                </div>
+                {records && (
+                  <div className="text-xs text-zinc-400 font-mono mt-1">
+                    {records.away.wins}–{records.away.losses}
+                  </div>
+                )}
+                <div className="text-[9px] uppercase tracking-[0.35em] text-zinc-500 mt-0.5">Away</div>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/80 shrink-0">
+                <span className="text-xs font-black text-zinc-400">vs</span>
+              </div>
+              <div className="flex-1 text-left">
+                <div
+                  className="text-3xl sm:text-4xl font-black tracking-tight leading-none"
+                  style={{ color: homeColor }}
+                >
+                  {home.shortName}
+                </div>
+                {records && (
+                  <div className="text-xs text-zinc-400 font-mono mt-1">
+                    {records.home.wins}–{records.home.losses}
+                  </div>
+                )}
+                <div className="text-[9px] uppercase tracking-[0.35em] text-zinc-500 mt-0.5">Home</div>
+              </div>
+            </motion.div>
+
+            {/* Tap hint + progress bar */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+              className="absolute bottom-0 left-0 right-0 pointer-events-none"
+            >
+              <div className="text-center pb-2.5">
+                <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-semibold">
+                  Tap for matchup
+                </span>
+              </div>
+              <div className="h-0.5 bg-zinc-900 overflow-hidden">
+                <motion.div
+                  className="h-full bg-zinc-600"
+                  initial={{ width: "100%" }}
+                  animate={{ width: "0%" }}
+                  transition={{ duration: PREGAME_SCREEN1_MS / 1000, ease: "linear" }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : (
+          // ── Screen 2: Team matchup panels ─────────────────────────────
+          <motion.div
+            key="matchup"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="absolute inset-0 flex"
+          >
+            {/* Away panel — slides in from the left */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              transition={{ type: "spring", stiffness: 185, damping: 26 }}
+              className="flex-1 relative flex flex-col items-center justify-center gap-3 overflow-hidden px-5"
+              style={{ background: `linear-gradient(140deg, ${awayColor}2a 0%, #050507 58%)` }}
+            >
+              <div
+                className="absolute -top-20 -left-20 h-72 w-72 rounded-full pointer-events-none"
+                style={{ background: `radial-gradient(circle, ${awayColor}38 0%, transparent 65%)` }}
+                aria-hidden
+              />
+              <div className="text-[9px] font-bold uppercase tracking-[0.45em] text-zinc-600">Away</div>
+              <motion.div
+                initial={{ scale: 0.45, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 240, damping: 16, delay: 0.18 }}
+                className="rounded-2xl p-2 ring-2 bg-black/40"
+                style={{ ["--tw-ring-color" as any]: `${awayColor}55` }}
+              >
+                <Image
+                  src={away.logos.primary}
+                  alt={away.name}
+                  width={320}
+                  height={320}
+                  className="h-20 w-20 sm:h-28 sm:w-28 rounded-xl object-contain"
+                />
+              </motion.div>
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 260 }}
+                className="text-center"
+              >
+                <div className="text-lg sm:text-xl font-black tracking-tight" style={{ color: awayColor }}>
+                  {away.shortName}
+                </div>
+                {records && (
+                  <div className="text-xs text-zinc-400 font-mono tabular-nums mt-0.5">
+                    {records.away.wins}–{records.away.losses}
+                  </div>
+                )}
+              </motion.div>
+              <motion.div
+                initial={{ y: 8, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.46, duration: 0.28 }}
+                className="mt-1 text-center"
+              >
+                <div className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-600">Starting</div>
+                <div className="text-xs sm:text-sm font-semibold text-zinc-200 mt-0.5">{awayPitcher.name}</div>
+                <div className="text-[10px] text-zinc-500 font-mono">
+                  Ctrl {awayPitcher.control} · IP {awayPitcher.ip}
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* VS badge */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 420, damping: 20, delay: 0.28 }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"
+            >
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 shadow-2xl shadow-black/80">
+                <span className="text-sm sm:text-base font-black text-zinc-300 tracking-tight leading-none">vs</span>
+              </div>
+            </motion.div>
+
+            {/* Home panel — slides in from the right */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              transition={{ type: "spring", stiffness: 185, damping: 26 }}
+              className="flex-1 relative flex flex-col items-center justify-center gap-3 overflow-hidden px-5"
+              style={{ background: `linear-gradient(220deg, ${homeColor}2a 0%, #050507 58%)` }}
+            >
+              <div
+                className="absolute -top-20 -right-20 h-72 w-72 rounded-full pointer-events-none"
+                style={{ background: `radial-gradient(circle, ${homeColor}38 0%, transparent 65%)` }}
+                aria-hidden
+              />
+              <div className="text-[9px] font-bold uppercase tracking-[0.45em] text-zinc-600">Home</div>
+              <motion.div
+                initial={{ scale: 0.45, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 240, damping: 16, delay: 0.22 }}
+                className="rounded-2xl p-2 ring-2 bg-black/40"
+                style={{ ["--tw-ring-color" as any]: `${homeColor}55` }}
+              >
+                <Image
+                  src={home.logos.primary}
+                  alt={home.name}
+                  width={320}
+                  height={320}
+                  className="h-20 w-20 sm:h-28 sm:w-28 rounded-xl object-contain"
+                />
+              </motion.div>
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.34, type: "spring", stiffness: 260 }}
+                className="text-center"
+              >
+                <div className="text-lg sm:text-xl font-black tracking-tight" style={{ color: homeColor }}>
+                  {home.shortName}
+                </div>
+                {records && (
+                  <div className="text-xs text-zinc-400 font-mono tabular-nums mt-0.5">
+                    {records.home.wins}–{records.home.losses}
+                  </div>
+                )}
+              </motion.div>
+              <motion.div
+                initial={{ y: 8, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.28 }}
+                className="mt-1 text-center"
+              >
+                <div className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-600">Starting</div>
+                <div className="text-xs sm:text-sm font-semibold text-zinc-200 mt-0.5">{homePitcher.name}</div>
+                <div className="text-[10px] text-zinc-500 font-mono">
+                  Ctrl {homePitcher.control} · IP {homePitcher.ip}
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Tap hint + draining progress bar */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.3 }}
+              className="absolute bottom-0 left-0 right-0 pointer-events-none"
+            >
+              <div className="text-center pb-2.5">
+                <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-semibold">
+                  Tap to begin
+                </span>
+              </div>
+              <div className="h-0.5 bg-zinc-900 overflow-hidden">
+                <motion.div
+                  className="h-full bg-zinc-600"
+                  initial={{ width: "100%" }}
+                  animate={{ width: "0%" }}
+                  transition={{ duration: PREGAME_SCREEN2_MS / 1000, ease: "linear" }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
