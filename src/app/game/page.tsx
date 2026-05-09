@@ -848,11 +848,16 @@ function Play({
       : game;
 
   return (
-    <main className={`h-[100dvh] flex flex-col text-zinc-100 overflow-hidden ${
-      stage.kind === "field"
-        ? "bg-[#1b4520]"
-        : "bg-zinc-950 px-3 py-2 sm:px-6 sm:py-3"
-    }`}>
+    <main
+      className={`h-[100dvh] flex flex-col text-zinc-100 overflow-hidden ${
+        stage.kind === "field" ? "" : "bg-zinc-950 px-3 py-2 sm:px-6 sm:py-3"
+      }`}
+      style={
+        stage.kind === "field"
+          ? { background: "radial-gradient(ellipse 120% 70% at 50% 52%, #1e5228 0%, #0a1a0e 100%)" }
+          : undefined
+      }
+    >
       <header className={`relative isolate shrink-0 mb-2 ${
         stage.kind === "field" ? "px-3 pt-2 sm:px-6 sm:pt-3" : ""
       }`}>
@@ -2079,14 +2084,12 @@ function Field({
         <BaseSquare cx={88} cy={50} occupied={runners.some((r) => r.pos === "first")} />
         <BaseSquare cx={50} cy={12} occupied={runners.some((r) => r.pos === "second")} />
         <BaseSquare cx={12} cy={50} occupied={runners.some((r) => r.pos === "third")} />
-        {/* Home plate */}
-        <rect
-          x={45}
-          y={84}
-          width={10}
-          height={10}
-          transform="rotate(45 50 89)"
+        {/* Home plate — pentagon: flat edge toward pitcher, point toward catcher */}
+        <polygon
+          points="47.5,86.5 52.5,86.5 52.5,89 50,91 47.5,89"
           fill="white"
+          stroke="rgba(255,255,255,0.5)"
+          strokeWidth={0.4}
         />
 
         {/* Outcome trajectory: lives inside the same viewBox so coords
