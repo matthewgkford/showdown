@@ -287,8 +287,10 @@ function GamePageInner() {
                 winner: over.winner,
               },
             );
+            clearActiveSeasonGame();
           }
-          clearActiveSeasonGame();
+          // If game is not over, the saved state stays in localStorage so
+          // the player can resume by navigating back to this URL.
           router.push("/season");
         }}
       />
@@ -332,8 +334,10 @@ function GamePageInner() {
           state,
         )
       }
-      onEnd={() => {
-        clearActiveExhibitionGame();
+      onEnd={(final) => {
+        if (checkGameOver(final)) {
+          clearActiveExhibitionGame();
+        }
         setExhibitionPhase({ kind: "setup" });
       }}
     />
@@ -855,7 +859,7 @@ function Play({
             onClick={() => handleEnd(game)}
             className="rounded-full border border-zinc-800 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400 hover:border-zinc-600 hover:text-zinc-100"
           >
-            End
+            ←
           </button>
           {(stage.kind === "intro" ||
             stage.kind === "pitcher-ready" ||
