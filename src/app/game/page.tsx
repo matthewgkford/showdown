@@ -787,10 +787,20 @@ function Play({
     battingSide === "home" ? matchColors.home : matchColors.away;
 
   return (
-    <main className="h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden px-3 py-2 sm:px-6 sm:py-3">
-      {/* Two-row header keeps everything legible on narrow screens.
-          Row 1: leave/sub controls. Row 2: scoreboard + bases. */}
-      <header className="shrink-0 mb-2">
+    <main className={`h-[100dvh] flex flex-col text-zinc-100 overflow-hidden ${
+      stage.kind === "field"
+        ? "bg-[#1b4520]"
+        : "bg-zinc-950 px-3 py-2 sm:px-6 sm:py-3"
+    }`}>
+      <header className={`relative isolate shrink-0 mb-2 ${
+        stage.kind === "field" ? "px-3 pt-2 sm:px-6 sm:pt-3" : ""
+      }`}>
+        {stage.kind === "field" && (
+          <div
+            className="absolute inset-x-0 -top-2 bottom-0 -z-10 pointer-events-none"
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)" }}
+          />
+        )}
         <div className="flex items-center justify-between mb-1.5">
           <button
             onClick={() => handleEnd(game)}
@@ -1458,12 +1468,12 @@ function FieldView({
   }, [isAnimating, halfEnded]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-2">
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-between">
       <motion.div
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        className="text-center shrink-0"
+        className="text-center shrink-0 px-4 pt-2"
       >
         {/* Compact label up top — the field animation does the heavy
             lifting visually now. */}
@@ -1488,7 +1498,7 @@ function FieldView({
       <Field runners={visible} outcome={outcome} preBases={preBases} />
 
       {isAnimating || (halfEnded && !holdDone) ? (
-        <div className="h-10" aria-hidden />
+        <div className="h-14" aria-hidden />
       ) : gameOver ? (
         <GameOverPanel
           game={game}
@@ -1502,7 +1512,7 @@ function FieldView({
       ) : (
         <button
           onClick={onNext}
-          className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600"
+          className="shrink-0 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 active:bg-emerald-600 mb-4"
         >
           Next batter →
         </button>
@@ -1648,18 +1658,19 @@ function Field({
   preBases: Bases;
 }) {
   return (
-    <div className="relative aspect-square w-full max-w-[min(70vh,420px)]">
+    <div className="relative aspect-square w-full">
       <svg
         viewBox="0 0 100 100"
         className="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
       >
         <defs>
-          {/* Alternating mow stripes across the outfield */}
-          <pattern id="fl-mow" x="0" y="0" width="100" height="8" patternUnits="userSpaceOnUse">
-            <rect width="100" height="4" fill="#245c2a" />
-            <rect y="4" width="100" height="4" fill="#1b4520" />
-          </pattern>
+          {/* Outfield grass: lighter centre, fades to the same dark green
+              used for the full-screen background so the edges blend in */}
+          <radialGradient id="fl-outfield" cx="50%" cy="50%" r="75%">
+            <stop offset="0%" stopColor="#2d6b34" />
+            <stop offset="100%" stopColor="#1b4520" />
+          </radialGradient>
           {/* Infield dirt: lighter centre fading to darker clay at edges */}
           <radialGradient id="fl-dirt" cx="50%" cy="50%" r="60%">
             <stop offset="0%" stopColor="#cc9f68" />
@@ -1673,7 +1684,7 @@ function Field({
         </defs>
 
         {/* Outfield grass with mow stripes */}
-        <rect width="100" height="100" fill="url(#fl-mow)" />
+        <rect width="100" height="100" fill="url(#fl-outfield)" />
         {/* Infield dirt — r=41 keeps the base bags fully within the skin */}
         <circle cx="50" cy="50" r="41" fill="url(#fl-dirt)" />
         {/* Infield grass */}
