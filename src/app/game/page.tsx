@@ -114,7 +114,7 @@ function randomLineups(): {
 
 type Phase =
   | { kind: "setup" }
-  | { kind: "playing"; game: GameState };
+  | { kind: "playing"; game: GameState; isResume: boolean };
 
 type SeasonContext = {
   round: number;
@@ -169,7 +169,7 @@ function GamePageInner() {
   // data/rosters.json with the opponent's stats scaled by the current
   // league tier (player's roster never scales). Returns null while season
   // state is hydrating.
-  const seasonInitialGame = useMemo<GameState | null>(() => {
+  const seasonInitialGame = useMemo<{ state: GameState; isResume: boolean } | null>(() => {
     if (!seasonCtx || !season) return null;
     const entry = season.schedule.find(
       (g) =>
@@ -179,7 +179,7 @@ function GamePageInner() {
     );
     if (!entry || entry.result !== null) return null;
 
-    // Saved game matching this matchup? Resume.
+    // Saved game matching this matchup? Resume without showing pregame.
     const saved = getActiveSeasonGame();
     if (
       saved &&
@@ -187,15 +187,16 @@ function GamePageInner() {
       saved.awaySlug === seasonCtx.awaySlug &&
       saved.homeSlug === seasonCtx.homeSlug
     ) {
-      return saved.state;
+      return { state: saved.state, isResume: true };
     }
 
-    return buildSeasonGame(
+    const state = buildSeasonGame(
       seasonCtx.awaySlug,
       seasonCtx.homeSlug,
       season.playerTeamSlug,
       season.currentLeagueTier,
     );
+    return state ? { state, isResume: false } : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seasonCtx]);
   // Note: deliberately not depending on `season`. After recordPlayerGame()
@@ -238,7 +239,7 @@ function GamePageInner() {
     // no window). The setState-in-effect pattern is correct here.
     const saved = getActiveExhibitionGame();
     if (saved) {
-      setExhibitionPhase({ kind: "playing", game: saved.state });
+      setExhibitionPhase({ kind: "playing", game: saved.state, isResume: true });
     }
     setHydrated(true);
   }, [seasonCtx]);
@@ -263,7 +264,8 @@ function GamePageInner() {
     }
     return (
       <Play
-        initial={seasonInitialGame}
+        initial={seasonInitialGame.state}
+        isResume={seasonInitialGame.isResume}
         playerSide={playerSide}
         records={records}
         onPersist={(state) =>
@@ -316,7 +318,7 @@ function GamePageInner() {
             { team: homeTeam, ...home },
           );
           saveActiveExhibitionGame(awayTeam.slug, homeTeam.slug, game);
-          setExhibitionPhase({ kind: "playing", game });
+          setExhibitionPhase({ kind: "playing", game, isResume: false });
         }}
       />
     );
@@ -325,6 +327,7 @@ function GamePageInner() {
   return (
     <Play
       initial={exhibitionPhase.game}
+      isResume={exhibitionPhase.isResume}
       playerSide={null}
       records={null}
       onPersist={(state) =>
@@ -567,12 +570,14 @@ const PREGAME_HOLD_MS = 5500;
 
 function Play({
   initial,
+  isResume = false,
   onEnd,
   playerSide,
   onPersist,
   records,
 }: {
   initial: GameState;
+  isResume?: boolean;
   onEnd: (final: GameState) => void;
   // The side the human player controls. null means exhibition / spectator
   // — the player taps both sides' dice. Set to "home" or "away" in
@@ -587,6 +592,7 @@ function Play({
   const [stage, setStage] = useState<Stage>({ kind: "intro" });
   const [manageOpen, setManageOpen] = useState(false);
   const [showPregame, setShowPregame] = useState(() =>
+    !isResume &&
     initial.inning === 1 &&
     initial.half === "top" &&
     initial.outs === 0 &&
