@@ -100,7 +100,7 @@ export default function ChooseTeamPage() {
             You already have a season going. Continue where you left off, or
             reset and pick a different team.
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <button
               onClick={handleContinueExisting}
               className="rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
@@ -109,9 +109,9 @@ export default function ChooseTeamPage() {
             </button>
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="rounded-full border border-zinc-700 px-5 py-2.5 text-sm text-zinc-300 hover:border-rose-700 hover:text-rose-300"
+              className="text-xs text-zinc-600 hover:text-zinc-400 underline underline-offset-2"
             >
-              Reset & pick new team
+              change team
             </button>
           </div>
         </div>

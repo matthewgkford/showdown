@@ -117,20 +117,15 @@ export default function SeasonPage() {
       }
     >
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
-        <header className="mb-6 flex items-baseline justify-between gap-4">
-          <div>
-            {league && (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
-                {league.displayName}
-              </p>
-            )}
-            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">
-              Season
-            </h1>
-          </div>
-          <Link href="/" className="text-xs text-zinc-400 hover:text-zinc-200">
-            ← home
-          </Link>
+        <header className="mb-6">
+          {league && (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
+              {league.displayName}
+            </p>
+          )}
+          <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">
+            Season
+          </h1>
         </header>
 
         {/* Reward banner — shown when there's at least one unopened win
