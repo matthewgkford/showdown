@@ -854,7 +854,7 @@ function Play({
       }`}
       style={
         stage.kind === "field"
-          ? { background: "radial-gradient(ellipse 120% 70% at 50% 52%, #1e5228 0%, #0a1a0e 100%)" }
+          ? { background: "linear-gradient(to bottom, #091409 0%, #1b4520 28%, #1b4520 100%)" }
           : undefined
       }
     >
