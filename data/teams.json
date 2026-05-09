@@ -15,6 +15,7 @@
     "shortName": "PEP",
     "divisionSlug": "turnpike",
     "colors": { "primary": "#074345", "accent": "#7A2A2A", "light": "#D4B47C" },
+    "displayColor": "#007076",
     "logos": { "primary": "/logos/pepperoni-slices/primary.png" },
     "flavor": "Old-school pizzeria neon and red sauce on the cleats. The natural-born nemesis of the Bagels.",
     "stadium": "/stadiums/pepperoni-slices.png"
@@ -35,6 +36,7 @@
     "shortName": "TUN",
     "divisionSlug": "turnpike",
     "colors": { "primary": "#1A1815", "accent": "#D67D2C", "light": "#EFE4C8" },
+    "displayColor": "#D67D2C",
     "logos": { "primary": "/logos/lincoln-tunnellers/primary.png" },
     "flavor": "Vintage 1937 commuter team — sodium-light glow, tile cream, the smell of exhaust and coffee. Wins on grit.",
     "stadium": "/stadiums/lincoln-tunnellers.png"
@@ -65,6 +67,7 @@
     "shortName": "RAT",
     "divisionSlug": "garden-state",
     "colors": { "primary": "#1A1A1A", "accent": "#FF2E63", "light": "#FBF4E4" },
+    "displayColor": "#FF2E63",
     "logos": { "primary": "/logos/diner-rats/primary.png" },
     "flavor": "2am at the 24-hour diner. Scrappy, urban, late-night, fueled by disco fries and bad decisions.",
     "stadium": "/stadiums/diner-rats.png"
@@ -75,6 +78,7 @@
     "shortName": "BWK",
     "divisionSlug": "garden-state",
     "colors": { "primary": "#3E7C8B", "accent": "#D85A4A", "light": "#F5EBD6" },
+    "displayColor": "#D85A4A",
     "logos": { "primary": "/logos/boardwalk-bandits/primary.png" },
     "flavor": "Sun-faded shore vibes. Mascot is a seagull who steals your fries the moment you look down at the box score.",
     "stadium": "/stadiums/boardwalk-bandits.png"
@@ -95,6 +99,7 @@
     "shortName": "MDL",
     "divisionSlug": "garden-state",
     "colors": { "primary": "#1C1C1C", "accent": "#3C5A5E", "light": "#EDE6D6" },
+    "displayColor": "#5B9EA6",
     "logos": { "primary": "/logos/meadowlands/primary.png" },
     "flavor": "Industrial swampland gravitas. The atmospheric heavyweight — fog, neon, exit-ramp menace.",
     "stadium": "/stadiums/meadowlands.png"
@@ -105,6 +110,7 @@
     "shortName": "RAM",
     "divisionSlug": "pinelands",
     "colors": { "primary": "#2E4A6B", "accent": "#C68642", "light": "#F0EAD8" },
+    "displayColor": "#C68642",
     "logos": { "primary": "/logos/ramapos/primary.png" },
     "flavor": "Forest lake at sunrise. Pine trees, calm water, the team that plays in the woods. Quiet but tough — like a porcupine with a bat.",
     "stadium": "/stadiums/ramapos.png"
@@ -125,6 +131,7 @@
     "shortName": "FNC",
     "divisionSlug": "pinelands",
     "colors": { "primary": "#F4D43F", "accent": "#1A1A1A", "light": "#FBF8E8" },
+    "displayColor": "#F4D43F",
     "logos": { "primary": "/logos/goldfinches/primary.png" },
     "flavor": "NJ state bird, the bright lemon-yellow team. Small, fast, scrappy — the leadoff hitter of the league.",
     "stadium": "/stadiums/goldfinches.png"
@@ -135,6 +142,7 @@
     "shortName": "DEV",
     "divisionSlug": "pinelands",
     "colors": { "primary": "#7A1820", "accent": "#0F0808", "light": "#EAE0C8" },
+    "displayColor": "#C23030",
     "logos": { "primary": "/logos/devils-hole/primary.png" },
     "flavor": "Cedar Grove folklore made flesh. Vintage gothic woodcut energy, eerie crimson glow, slightly haunted — the swimming hole locals warned you about.",
     "stadium": "/stadiums/devils-hole.png"
@@ -175,6 +183,7 @@
     "shortName": "OCN",
     "divisionSlug": "beacon",
     "colors": { "primary": "#5C9CC4", "accent": "#F4A98A", "light": "#F4ECDA" },
+    "displayColor": "#5C9CC4",
     "logos": { "primary": "/logos/ocean-grovers/primary.png" },
     "flavor": "Sunrise on the Atlantic. Wholesome shore energy — bodyboards, sunburns, families with picnic blankets.",
     "stadium": "/stadiums/ocean-grovers.png"
@@ -185,6 +194,7 @@
     "shortName": "SPH",
     "divisionSlug": "beacon",
     "colors": { "primary": "#B8C0C8", "accent": "#0099E5", "light": "#FFFFFF" },
+    "displayColor": "#0099E5",
     "logos": { "primary": "/logos/spheres/primary.png" },
     "flavor": "Liberty Science Center modern. Brushed silver, electric blue, geodesic future-coded — the league's tomorrow team.",
     "stadium": "/stadiums/spheres.png"
@@ -195,6 +205,7 @@
     "shortName": "EDI",
     "divisionSlug": "beacon",
     "colors": { "primary": "#E8A02A", "accent": "#7A2E1F", "light": "#EDE2C8" },
+    "displayColor": "#E8A02A",
     "logos": { "primary": "/logos/edisons/primary.png" },
     "flavor": "Vintage inventor warmth. Filament-bulb glow, Menlo Park lab, phonograph wax — the team that failed 999 times.",
     "stadium": "/stadiums/edisons.png"

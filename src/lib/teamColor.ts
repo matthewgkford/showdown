@@ -72,6 +72,7 @@ function toHex([r, g, b]: [number, number, number]): string {
 }
 
 export function getTeamDisplayColor(team: Team): string {
+  if (team.displayColor) return team.displayColor;
   const candidates = [
     team.colors.accent,
     team.colors.light,

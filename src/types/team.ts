@@ -26,6 +26,11 @@ export type Team = {
   // Foreign key into divisions.json.
   divisionSlug: string;
   colors: TeamColors;
+  // Optional override for the color used in dark-background UI (scoreboard,
+  // dice, pregame callout). When set, bypasses getTeamDisplayColor's
+  // luminance heuristic entirely. Use when none of the three palette colors
+  // pop well enough on zinc-950.
+  displayColor?: string;
   logos: TeamLogos;
   // 1-2 sentences of personality. Shown on the choose-team confirm
   // screen and reusable on the future season dashboard.
